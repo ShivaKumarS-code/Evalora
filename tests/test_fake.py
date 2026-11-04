@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import BaseModel
 
 from evalora.llm.base import Message, Role
 from evalora.llm.fake import FakeProvider
+
+
+class HandlerSchema(BaseModel):
+    value: str
 
 
 async def test_queue_is_returned_in_order() -> None:
@@ -40,3 +45,20 @@ async def test_default_response_after_queue_is_empty() -> None:
     provider = FakeProvider([], default="fallback")
     response = await provider.complete([Message(role=Role.USER, content="hi")])
     assert response.text == "fallback"
+
+
+async def test_handler_can_choose_a_response_by_schema() -> None:
+    def handler(
+        messages: list[Message],
+        schema: type[BaseModel] | None,
+    ) -> str:
+        assert schema is HandlerSchema
+        return '{"value": "handled"}'
+
+    provider = FakeProvider(handler=handler)
+    response = await provider.complete(
+        [Message(role=Role.USER, content="hi")],
+        response_schema=HandlerSchema,
+    )
+
+    assert response.text == '{"value": "handled"}'

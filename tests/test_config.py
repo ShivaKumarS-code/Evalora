@@ -63,3 +63,13 @@ def test_error_includes_field_location(tmp_path: Path) -> None:
     )
     with pytest.raises(ConfigError, match=r"pipeline\.concurrency"):
         load_config(path)
+
+
+def test_groq_provider_is_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "bad.yaml"
+    path.write_text(
+        DEFAULT_CONFIG_YAML.replace("provider: gemini", "provider: groq"),
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="provider"):
+        load_config(path)

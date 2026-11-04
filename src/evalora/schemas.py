@@ -13,6 +13,7 @@ class Chunk(BaseModel):
     doc_id: str
     ordinal: int
     text: str
+    page: int | None = None
 
 
 class QuestionType(StrEnum):

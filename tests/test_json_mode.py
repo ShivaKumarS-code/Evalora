@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from evalora.llm.base import LLMClient, Message, Role, StructuredOutputError
 from evalora.llm.fake import FakeProvider
-from evalora.llm.json_mode import complete_json, extract_json
+from evalora.llm.json_mode import complete_json, complete_json_with_usage, extract_json
 
 
 class StructuredAnswer(BaseModel):
@@ -37,6 +37,21 @@ async def test_valid_json_returns_model() -> None:
 
     assert result == StructuredAnswer(answer="yes", confidence=2)
     assert provider.call_count == 1
+
+
+async def test_complete_json_with_usage_returns_responses() -> None:
+    provider = FakeProvider(['{"answer": "yes", "confidence": 2}'])
+    client = LLMClient(provider)
+
+    result, responses = await complete_json_with_usage(
+        client,
+        [Message(role=Role.USER, content="prompt")],
+        StructuredAnswer,
+    )
+
+    assert result.answer == "yes"
+    assert len(responses) == 1
+    assert responses[0].usage.total_tokens > 0
 
 
 async def test_fenced_json_is_accepted() -> None:

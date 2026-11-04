@@ -6,12 +6,12 @@ This repository is being built phase by phase from [`SPEC.md`](./SPEC.md).
 
 ## Status
 
-Phase 0 is implemented and tested. Later phases are not built yet.
+Phase 0 and Phase 1 are implemented and tested. Later phases are not built yet.
 
 | Phase | Status |
 | --- | --- |
 | 0. Scaffolding and LLM layer | Complete |
-| 1. Ingestion and test generation | Not started |
+| 1. Ingestion and test generation | Complete |
 | 2. Runner and retrieval metrics | Not started |
 | 3. Judges, attribution and report | Not started |
 | 4. Judge validation | Not started |
@@ -36,6 +36,14 @@ eventually appears must come from a real stored run.
   and a typed failure error.
 - Per-call token usage and approximate cost tracking, with aggregation helpers.
 - A deterministic `FakeProvider` for tests.
+- Markdown, text and PDF loaders that preserve document paths and PDF page
+  numbers.
+- A boundary-aware chunker with configurable size and overlap, plus chunk IDs
+  that stay stable for unchanged content.
+- `evalora generate` for single-hop, multi-hop, unanswerable and adversarial
+  questions, with exact/near duplicate removal, a separate answerability check,
+  seeded sampling, a `--limit` dev flag, and a generation report with drop
+  reasons and token usage.
 - GitHub Actions CI for lint, format, strict type checks and tests.
 
 ## Requirements
@@ -58,7 +66,13 @@ Try the CLI:
 ```bash
 uv run evalora version
 uv run evalora init
+uv run evalora generate --config evalora.yaml --out test_set.jsonl --limit 4
 ```
+
+`generate` reads the documents under `docs.paths` and writes the JSONL test set
+plus `generation_report.json` in the output directory. It makes real LLM calls,
+so `GEMINI_API_KEY` must be set and the configured `docs.paths` must contain
+documents.
 
 ## API keys
 
@@ -87,10 +101,18 @@ src/evalora/
   cli.py          Typer app
   config.py       YAML config loading and validation
   schemas.py      shared Pydantic models
+  ingest/
+    loaders.py    markdown, text and PDF loading
+    chunker.py    boundary-aware chunks with stable IDs
+  generate/
+    prompts.py    versioned generation and answerability prompts
+    generator.py  case generation, sampling and report writing
+    filters.py    dedupe and answerability filtering
   llm/
     base.py       protocol, response types, errors, LLMClient wrapper
     gemini.py
     fake.py       deterministic test provider
+    factory.py    configured client construction
     cache.py      SQLite response cache
     limiter.py    concurrency and token-bucket limiting
     json_mode.py  structured output with repair retries

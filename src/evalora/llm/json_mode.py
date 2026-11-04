@@ -7,7 +7,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from evalora.llm.base import LLMClient, Message, Role, StructuredOutputError
+from evalora.llm.base import LLMClient, LLMResponse, Message, Role, StructuredOutputError
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -39,6 +39,39 @@ def extract_json(text: str) -> str:
     return stripped
 
 
+async def complete_json_with_usage(
+    client: LLMClient,
+    messages: Sequence[Message],
+    schema: type[ModelT],
+    *,
+    temperature: float = 0.0,
+    max_tokens: int = 1024,
+    max_attempts: int = 3,
+) -> tuple[ModelT, list[LLMResponse]]:
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be at least 1")
+    conversation = list(messages)
+    responses: list[LLMResponse] = []
+    last_error = ""
+    for _ in range(max_attempts):
+        response = await client.complete(
+            conversation,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_schema=schema,
+        )
+        responses.append(response)
+        try:
+            return schema.model_validate_json(extract_json(response.text)), responses
+        except ValueError as exc:
+            last_error = str(exc)
+            conversation.append(Message(role=Role.ASSISTANT, content=response.text))
+            conversation.append(
+                Message(role=Role.USER, content=REPAIR_PROMPT.format(error=last_error))
+            )
+    raise StructuredOutputError(attempts=max_attempts, last_error=last_error)
+
+
 async def complete_json(
     client: LLMClient,
     messages: Sequence[Message],
@@ -48,23 +81,12 @@ async def complete_json(
     max_tokens: int = 1024,
     max_attempts: int = 3,
 ) -> ModelT:
-    if max_attempts < 1:
-        raise ValueError("max_attempts must be at least 1")
-    conversation = list(messages)
-    last_error = ""
-    for _ in range(max_attempts):
-        response = await client.complete(
-            conversation,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            response_schema=schema,
-        )
-        try:
-            return schema.model_validate_json(extract_json(response.text))
-        except ValueError as exc:
-            last_error = str(exc)
-            conversation.append(Message(role=Role.ASSISTANT, content=response.text))
-            conversation.append(
-                Message(role=Role.USER, content=REPAIR_PROMPT.format(error=last_error))
-            )
-    raise StructuredOutputError(attempts=max_attempts, last_error=last_error)
+    result, _ = await complete_json_with_usage(
+        client,
+        messages,
+        schema,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        max_attempts=max_attempts,
+    )
+    return result

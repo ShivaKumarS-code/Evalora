@@ -93,3 +93,62 @@ The Groq provider and its configuration option were removed. Gemini is the only
 supported provider for generation and judging; the `provider` fields accept only
 `gemini`, the default judge model is `gemini-2.0-flash`, and only
 `GEMINI_API_KEY` is required. The Groq pricing entry was removed with it.
+
+## D013 PDF pages and chunk provenance
+
+`Chunk` gains an optional `page` field (the spec's core schema did not include
+one) so PDF page numbers survive chunking and can be written into test-case
+metadata. `doc_id` is the document path relative to the current working
+directory when possible, otherwise an absolute POSIX path. Ordinals keep
+incrementing across all pages of the same document so chunk IDs stay unique.
+
+## D014 Chunking algorithm
+
+Chunks are built from paragraphs first, then sentences inside oversized
+paragraphs, then fixed-size character slices for a single overlong sentence.
+Segments are packed greedily up to `chunk_size`, carrying the last
+`chunk_overlap` characters into the next chunk. A chunk ID is
+`sha1(doc_id + ordinal + text)[:12]`, matching the spec.
+
+## D015 Prompt versions
+
+Every generation and answerability prompt is a `PromptTemplate` with a name and
+version. Each generated `TestCase` records `prompt` and `prompt_version` in
+metadata, and the generation report records the version of every prompt used.
+Prompts are sent through `complete_json`, so provider JSON mode plus local
+Pydantic validation both apply.
+
+## D016 `--limit` allocation
+
+`--limit` caps the total number of cases requested, not the number per type. It
+is allocated round-robin in the fixed order single-hop, multi-hop, unanswerable,
+adversarial, so a small limit still produces a mix. The generation report shows
+the post-limit requested counts.
+
+## D017 Duplicate detection
+
+Questions are normalized to lowercase alphanumeric tokens. Exact normalized
+matches are dropped as `exact_duplicate`; otherwise token-set Jaccard similarity
+at or above `0.9` is dropped as `near_duplicate`. The threshold is a module
+constant for now because the spec did not require it in config.
+
+## D018 Answerability and generation behaviour
+
+Answerable case types are checked against their gold chunks only. Unanswerable
+cases are checked against the source chunk plus up to two neighbors, which is
+the context the question generator saw. A mismatch with the expected verdict is
+dropped as `answerability_disagreement`; missing context is
+`insufficient_context`; LLM failures after retries are `generation_failed` and
+do not abort the run. Pair-based types are skipped for documents that produce
+no related chunk pair and counted as `insufficient_context`.
+
+Generation runs calls sequentially for deterministic ordering. The report is
+written as `generation_report.json` next to `--out`; test-set lines are compact
+JSON with sorted keys and LF line endings.
+
+## D019 LLM client construction
+
+`llm/factory.py` builds the Gemini provider, SQLite cache (unless `--no-cache`)
+and rate limiter used by generation. Defaults are 4 concurrent calls and 60
+requests per minute; these are constants until a config need appears.
+
