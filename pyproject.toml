@@ -22,6 +22,7 @@ evalora = "evalora.cli:app"
 
 [dependency-groups]
 dev = [
+    "fastapi>=0.162.0",
     "mypy>=1.10",
     "pre-commit>=3.7",
     "pytest>=8.2",
@@ -29,6 +30,7 @@ dev = [
     "respx>=0.21",
     "ruff>=0.5",
     "types-pyyaml>=6.0.12.20261103",
+    "uvicorn>=0.54.0",
 ]
 
 [build-system]
@@ -56,5 +58,6 @@ warn_unreachable = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = ["live: tests that call a real LLM API"]
 addopts = "-m 'not live'"

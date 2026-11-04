@@ -152,3 +152,79 @@ JSON with sorted keys and LF line endings.
 and rate limiter used by generation. Defaults are 4 concurrent calls and 60
 requests per minute; these are constants until a config need appears.
 
+## D020 Pipeline response mapping
+
+`run/adapter.py` resolves the configured `answer` and `contexts` paths as dot
+paths with an optional leading `$.` and list indices (`result.0.contexts`).
+Every resolved context must be an object with a string `text` and an optional
+string `id`. Missing paths and wrong types raise `ContractError` naming the
+mapping path. The contract is documented in `docs/ADAPTER_CONTRACT.md`.
+
+## D021 Context matching
+
+Returned context ids are authoritative: an id matches only when it is one of
+the case's gold chunk ids, and the runner does not fall back to text matching in
+that case. Contexts without ids are matched by normalized-text containment or
+by gold-token coverage at or above `pipeline.match_threshold` (default `0.8`).
+
+Text matching needs the gold chunk text, so generated test cases now include a
+`gold_chunk_texts` mapping in metadata. This keeps the test set self-contained
+for CI and avoids re-chunking documents at run time. Test sets without that
+metadata cannot text-match contexts that lack ids.
+
+## D022 Retrieval applicability
+
+`RetrievalScores.applicable` is false for unanswerable cases and for answerable
+cases with no gold chunks. Those cases are excluded from hit rate, MRR and
+context recall means. The retrieval summary still reports how many unanswerable
+cases returned any context, and reports `n/a` rates when no applicable cases
+exist rather than inventing a zero.
+
+## D023 Runner behaviour
+
+The runner shares one `httpx.AsyncClient`, bounds in-flight requests with a
+semaphore from `pipeline.concurrency`, and applies `pipeline.timeout_s` per
+request. It retries timeouts, transport errors, HTTP 429 and 5xx up to two times
+with exponential backoff and no jitter; other 4xx responses are not retried.
+Every failure is stored as a `PipelineResponse` with `error` and the
+`pipeline_error` failure category, so one bad case never aborts a run.
+
+## D024 Run storage and resume
+
+SQLite tables store runs, per-case results and named baselines. The database is
+`.evalora/runs.db` by default; `EVALORA_DB_PATH` overrides it. Each run records
+the config snapshot, test-set hash, git SHA when available, timestamps and case
+counts. Header values in the saved config snapshot are replaced with `***` so
+auth tokens are not persisted.
+
+Results are saved as each case completes. Resuming a run name loads completed
+case ids and skips them. Reusing a run name with a different test-set hash is
+rejected with a clear error instead of mixing results from different test sets.
+
+## D025 Toy RAG
+
+`examples/toy_rag` uses a pure-Python BM25 index over the sample docs. Answers
+are extractive by default so tests and demos work offline; `TOY_RAG_USE_LLM=1`
+switches to Gemini through the same `LLMClient` wrapper. Environment toggles
+cover tiny chunks, disabled documents, retrieval disabled, a weak prompt and
+the LLM model. `examples/evalora.yaml` points at these docs and the local
+endpoint. It contains no evaluation results.
+
+## D026 CLI run
+
+`evalora run` requires `--run-name` and defaults `--tests` to
+`test_set.jsonl`. It shows a Rich progress bar, saves each result, prints a
+retrieval summary table, and reports the database path. The command makes no
+LLM calls.
+
+## D027 Toy RAG is local-only
+
+The `examples/` tree (toy RAG app, sample docs and example config) and the two
+toy-specific integration tests are intentionally gitignored. They stay available
+for local development but are not part of the published repository. FastAPI and
+uvicorn remain in the dev dependency group so the local demo still runs. The
+committed test suite covers the runner, adapter, store and retrieval metrics
+independently of the toy app.
+
+
+

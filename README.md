@@ -6,13 +6,13 @@ This repository is being built phase by phase from [`SPEC.md`](./SPEC.md).
 
 ## Status
 
-Phase 0 and Phase 1 are implemented and tested. Later phases are not built yet.
+Phase 0, Phase 1 and Phase 2 are implemented and tested. Later phases are not built yet.
 
 | Phase | Status |
 | --- | --- |
 | 0. Scaffolding and LLM layer | Complete |
 | 1. Ingestion and test generation | Complete |
-| 2. Runner and retrieval metrics | Not started |
+| 2. Runner and retrieval metrics | Complete |
 | 3. Judges, attribution and report | Not started |
 | 4. Judge validation | Not started |
 | 5. CI gate, GitHub Action and release | Not started |
@@ -44,6 +44,14 @@ eventually appears must come from a real stored run.
   questions, with exact/near duplicate removal, a separate answerability check,
   seeded sampling, a `--limit` dev flag, and a generation report with drop
   reasons and token usage.
+- `evalora run` with bounded concurrency, per-request timeouts, retries on
+  transient failures, configurable response mapping, and per-case error capture.
+- Deterministic retrieval metrics: hit rate, MRR and context recall, plus a
+  separate count of retrieval returning anything for unanswerable cases.
+- SQLite storage for runs, results and baselines. Runs resume by skipping case
+  IDs already stored under the same run name.
+- The adapter contract is documented in
+  [`docs/ADAPTER_CONTRACT.md`](./docs/ADAPTER_CONTRACT.md).
 - GitHub Actions CI for lint, format, strict type checks and tests.
 
 ## Requirements
@@ -67,12 +75,17 @@ Try the CLI:
 uv run evalora version
 uv run evalora init
 uv run evalora generate --config evalora.yaml --out test_set.jsonl --limit 4
+uv run evalora run --config evalora.yaml --tests test_set.jsonl --run-name demo
 ```
 
 `generate` reads the documents under `docs.paths` and writes the JSONL test set
 plus `generation_report.json` in the output directory. It makes real LLM calls,
 so `GEMINI_API_KEY` must be set and the configured `docs.paths` must contain
 documents.
+
+`run` does not call an LLM. It stores results in `.evalora/runs.db`, prints a
+retrieval summary, and skips cases already completed under the same run name.
+Set `EVALORA_DB_PATH` to move the database.
 
 ## API keys
 
@@ -108,6 +121,13 @@ src/evalora/
     prompts.py    versioned generation and answerability prompts
     generator.py  case generation, sampling and report writing
     filters.py    dedupe and answerability filtering
+  run/
+    adapter.py    response mapping and contract validation
+    runner.py     async runner, test-set loading and error capture
+  evaluate/
+    retrieval.py  hit rate, MRR, context recall and aggregation
+  store/
+    db.py         runs, results and baselines in SQLite
   llm/
     base.py       protocol, response types, errors, LLMClient wrapper
     gemini.py
@@ -118,7 +138,9 @@ src/evalora/
     json_mode.py  structured output with repair retries
     costs.py      token usage and approximate pricing
 tests/
-docs/DECISIONS.md
+docs/
+  DECISIONS.md
+  ADAPTER_CONTRACT.md
 ```
 
 ## License

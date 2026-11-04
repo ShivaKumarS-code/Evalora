@@ -47,6 +47,7 @@ class PipelineResponse(BaseModel):
 
 
 class RetrievalScores(BaseModel):
+    applicable: bool = True
     hit: bool
     reciprocal_rank: float
     context_recall: float

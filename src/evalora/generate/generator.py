@@ -319,6 +319,7 @@ async def _single_hop(client: LLMClient, chunk: Chunk) -> tuple[Candidate, list[
             "source_doc_ids": [chunk.doc_id],
             "source_pages": _pages([chunk]),
             "supporting_quote": draft.supporting_quote,
+            "gold_chunk_texts": {chunk.chunk_id: chunk.text},
             "generation_strategy": "single_chunk",
         },
     )
@@ -358,6 +359,7 @@ async def _multi_hop(
             "source_doc_ids": _doc_ids([first, second]),
             "source_pages": _pages([first, second]),
             "supporting_quotes": draft.supporting_quotes,
+            "gold_chunk_texts": {first.chunk_id: first.text, second.chunk_id: second.text},
             "generation_strategy": "related_chunks",
         },
     )
@@ -396,6 +398,7 @@ async def _unanswerable(
             "source_doc_ids": _doc_ids(context_chunks),
             "source_pages": _pages(context_chunks),
             "rationale": draft.rationale,
+            "gold_chunk_texts": {},
             "generation_strategy": "source_plus_neighbors",
         },
     )
@@ -437,6 +440,7 @@ async def _adversarial(
             "supporting_quote": draft.supporting_quote,
             "near_miss_chunk_id": near_miss.chunk_id,
             "near_miss_detail": draft.near_miss_detail,
+            "gold_chunk_texts": {target.chunk_id: target.text},
             "generation_strategy": "near_miss_pair",
         },
     )

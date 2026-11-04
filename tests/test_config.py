@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from evalora.config import DEFAULT_CONFIG_YAML, ConfigError, load_config
+from evalora.config import DEFAULT_CONFIG_YAML, ConfigError, load_config, redacted_config_snapshot
 
 
 def test_starter_config_is_valid(tmp_path: Path) -> None:
@@ -73,3 +73,20 @@ def test_groq_provider_is_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises(ConfigError, match="provider"):
         load_config(path)
+
+
+def test_config_snapshot_redacts_header_values(tmp_path: Path) -> None:
+    path = tmp_path / "evalora.yaml"
+    path.write_text(
+        DEFAULT_CONFIG_YAML.replace(
+            "  headers: {}",
+            "  headers:\n    Authorization: secret-token",
+        ),
+        encoding="utf-8",
+    )
+    config = load_config(path)
+
+    snapshot = redacted_config_snapshot(config)
+
+    assert snapshot["pipeline"]["headers"] == {"Authorization": "***"}
+    assert config.pipeline.headers["Authorization"] == "secret-token"

@@ -14,3 +14,8 @@ htmlcov/
 *.sqlite
 *.sqlite3
 .env
+
+# Local-only demo app and its integration tests, not part of the published repo
+examples/
+tests/test_toy_rag.py
+tests/test_cli_toy_integration.py

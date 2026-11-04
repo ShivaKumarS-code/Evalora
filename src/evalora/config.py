@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 import yaml
 from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError, field_validator, model_validator
@@ -167,3 +167,16 @@ def load_config(path: str | Path) -> EvaloraConfig:
         return EvaloraConfig.model_validate(raw)
     except ValidationError as exc:
         raise ConfigError(_format_validation_error(config_path, exc)) from exc
+
+
+def redacted_config_snapshot(
+    config: EvaloraConfig, *, redact_headers: bool = True
+) -> dict[str, Any]:
+    snapshot = config.model_dump(mode="json")
+    if redact_headers:
+        pipeline = snapshot.get("pipeline")
+        if isinstance(pipeline, dict):
+            headers = pipeline.get("headers")
+            if isinstance(headers, dict):
+                pipeline["headers"] = {key: "***" for key in headers}
+    return snapshot
