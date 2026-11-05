@@ -2,25 +2,6 @@
 
 Evalora generates a test suite from your documents, runs it against any RAG pipeline over HTTP, scores retrieval and hallucination, attributes each failure to a cause, and fails CI when quality regresses.
 
-This repository is being built phase by phase from [`SPEC.md`](./SPEC.md).
-
-## Status
-
-Phase 0, Phase 1, Phase 2 and Phase 3 are implemented and tested. Later phases are not built yet.
-
-| Phase | Status |
-| --- | --- |
-| 0. Scaffolding and LLM layer | Complete |
-| 1. Ingestion and test generation | Complete |
-| 2. Runner and retrieval metrics | Complete |
-| 3. Judges, attribution and report | Complete |
-| 4. Judge validation | Not started |
-| 5. CI gate, GitHub Action and release | Not started |
-| 6. Dogfooding and write-up | Not started |
-
-No evaluation numbers are reported in this README yet. Every metric that
-eventually appears must come from a real stored run.
-
 ## What works now
 
 - Pydantic v2 schemas for chunks, test cases, pipeline responses, claim
