@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evalora report - {{ run.run_name }}</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --text: #1f2933;
+      --muted: #667085;
+      --border: #d9dee7;
+      --accent: #2f5d8a;
+      --pass: #1f7a4d;
+      --fail: #b42318;
+      --warn: #92400e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+    }
+    header h1 { margin: 0 0 8px; font-size: 24px; }
+    header .meta { color: var(--muted); font-size: 13px; }
+    main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+    section { margin-bottom: 28px; }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .card-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .card-value { font-size: 28px; font-weight: 650; margin-top: 4px; }
+    .card-sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    th { background: #eef1f5; color: #344054; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+    tr:last-child td { border-bottom: 0; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .totals { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .filters select, .filters input {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .filters input { min-width: 260px; flex: 1; }
+    .case {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .case-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .case-head h3 { margin: 0; font-size: 16px; }
+    .case-meta { color: var(--muted); font-size: 12px; margin: 4px 0 12px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .badge.pass { background: #e7f4ec; color: var(--pass); }
+    .badge.failure { background: #fde8e7; color: var(--fail); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .field { margin-top: 10px; }
+    .field-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 3px; }
+    .answer, .context, .error {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .error { background: #fef3f2; border-color: #fecdca; color: var(--fail); }
+    .context { margin-bottom: 8px; }
+    .ctx-id { color: var(--muted); font-size: 12px; }
+    .claims { list-style: none; padding: 0; margin: 0; }
+    .claim {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--pass);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+    }
+    .claim.unsupported { border-left-color: var(--fail); background: #fef3f2; }
+    .claim .rationale { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .claim .evidence { color: var(--muted); font-size: 12px; margin-left: 6px; }
+    .muted { color: var(--muted); }
+    .scores { color: var(--muted); font-size: 12px; margin-top: 10px; }
+    .flipped { margin-top: 12px; }
+    details.config { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+    details.config pre { overflow: auto; max-height: 380px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Evalora report: {{ run.run_name }}</h1>
+  <div class="meta">
+    Created {{ run.created_at.strftime("%Y-%m-%d %H:%M UTC") }}
+    &middot; cases {{ run.completed_count }}/{{ run.case_count }}
+    &middot; test set <code>{{ run.test_set_hash[:12] }}</code>
+    {% if run.git_sha %}&middot; commit <code>{{ run.git_sha[:12] }}</code>{% endif %}
+  </div>
+</header>
+<main>
+  <section>
+    <h2>Summary</h2>
+    <div class="cards">
+      {% for label, summary in metric_cards %}
+      <div class="card">
+        <div class="card-label">{{ label }}</div>
+        <div class="card-value">{{ summary.mean|fmt }}</div>
+        <div class="card-sub">
+          n={{ summary.n }}
+          {% if summary.ci_low is not none %}&middot; {{ ci_label }} {{ summary.ci_low|fmt }} - {{ summary.ci_high|fmt }}{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="totals">
+      Latency p50 {{ aggregate.latency_p50|fmt }} ms &middot; p95 {{ aggregate.latency_p95|fmt }} ms
+      &middot; judge calls {{ aggregate.token_usage.calls }}
+      &middot; tokens {{ aggregate.token_usage.total_tokens }}
+      &middot; estimated cost ${{ aggregate.token_usage.cost_usd|fmt(6) }}
+    </div>
+  </section>
+
+  <section>
+    <h2>By question type</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th><th>Cases</th><th>Faithfulness</th><th>Correctness</th>
+          <th>Hit rate</th><th>MRR</th><th>Context recall</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for question_type, summary in type_rows %}
+        <tr>
+          <td>{{ question_type.value }}</td>
+          <td class="num">{{ summary.cases }}</td>
+          <td class="num">{{ summary.faithfulness.mean|fmt }}</td>
+          <td class="num">{{ summary.correctness.mean|fmt }}</td>
+          <td class="num">{{ summary.hit_rate.mean|fmt }}</td>
+          <td class="num">{{ summary.mrr.mean|fmt }}</td>
+          <td class="num">{{ summary.context_recall.mean|fmt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Failure categories</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Count</th></tr></thead>
+      <tbody>
+        {% for category, count in failure_rows %}
+        <tr><td>{{ category.value }}</td><td class="num">{{ count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  {% if baseline %}
+  <section>
+    <h2>Baseline diff: {{ baseline.baseline_run_name }}</h2>
+    <table>
+      <thead><tr><th>Metric</th><th>Current</th><th>Baseline</th><th>Delta</th></tr></thead>
+      <tbody>
+        {% for metric in baseline.metrics %}
+        <tr>
+          <td>{{ metric.name }}</td>
+          <td class="num">{{ metric.current|fmt }}</td>
+          <td class="num">{{ metric.baseline|fmt }}</td>
+          <td class="num">{{ metric.delta|fmt_delta }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="flipped">
+      <h3>Cases flipped from pass to fail</h3>
+      {% if baseline.flipped_cases %}
+      <table>
+        <thead><tr><th>Case</th><th>Type</th><th>Failure</th><th>Question</th></tr></thead>
+        <tbody>
+          {% for case in baseline.flipped_cases %}
+          <tr>
+            <td><code>{{ case.case.case_id }}</code></td>
+            <td>{{ case.case.type.value }}</td>
+            <td>{{ case.failure_category.value }}</td>
+            <td>{{ case.case.question }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">No cases flipped from pass to fail.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Cases</h2>
+    <div class="filters">
+      <select id="type-filter" aria-label="Filter by question type">
+        <option value="all">All types</option>
+        {% for question_type in question_types %}
+        <option value="{{ question_type.value }}">{{ question_type.value }}</option>
+        {% endfor %}
+      </select>
+      <select id="failure-filter" aria-label="Filter by failure category">
+        <option value="all">All outcomes</option>
+        <option value="none">pass</option>
+        {% for category in failure_categories %}
+        <option value="{{ category.value }}">{{ category.value }}</option>
+        {% endfor %}
+      </select>
+      <input id="search" type="search" placeholder="Search questions..." aria-label="Search questions">
+    </div>
+
+    {% for case in results %}
+    <article class="case"
+      data-type="{{ case.case.type.value }}"
+      data-failure="{{ case.failure_category.value if case.failure_category else 'none' }}"
+      data-question="{{ case.case.question|lower }}">
+      <div class="case-head">
+        <div>
+          <h3>{{ case.case.question }}</h3>
+          <div class="case-meta">
+            <code>{{ case.case.case_id }}</code> &middot; {{ case.case.type.value }}
+            &middot; latency {{ case.response.latency_ms|fmt }} ms
+          </div>
+        </div>
+        {% if case.failure_category %}
+        <span class="badge failure">{{ case.failure_category.value }}</span>
+        {% else %}
+        <span class="badge pass">pass</span>
+        {% endif %}
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">{{ case.case.gold_answer if case.case.gold_answer is not none else "n/a" }}</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">{{ case.response.answer }}</div>
+        </div>
+      </div>
+
+      {% if case.response.error %}
+      <div class="field">
+        <div class="field-label">Pipeline error</div>
+        <div class="error">{{ case.response.error }}</div>
+      </div>
+      {% endif %}
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness {{ case.faithfulness|fmt }})</div>
+        {% if case.claim_verdicts %}
+        <ul class="claims">
+          {% for verdict in case.claim_verdicts %}
+          <li class="claim {{ 'supported' if verdict.supported else 'unsupported' }}">
+            <strong>{{ "supported" if verdict.supported else "UNSUPPORTED" }}</strong>
+            {{ verdict.claim }}
+            {% if verdict.evidence_context_index is not none %}
+            <span class="evidence">evidence: context {{ verdict.evidence_context_index }}</span>
+            {% endif %}
+            <span class="rationale">{{ verdict.rationale }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No factual claims extracted.</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        {% if case.response.contexts %}
+          {% for context in case.response.contexts %}
+          <div class="context">
+            <div class="ctx-id">id: {{ context.id if context.id is not none else "none" }}</div>
+            <div>{{ context.text }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <p class="muted">No contexts returned.</p>
+        {% endif %}
+      </div>
+
+      <div class="scores">
+        retrieval: hit={{ case.retrieval.hit }}, MRR={{ case.retrieval.reciprocal_rank|fmt }},
+        recall={{ case.retrieval.context_recall|fmt }}
+        {% if not case.retrieval.applicable %}(not applicable){% endif %}
+        &middot; correctness: {{ case.correctness_label.value if case.correctness_label else "n/a" }}
+        {{ "(" ~ ("true" if case.correct else "false") ~ ")" if case.correct is not none else "" }}
+        &middot; abstained: {{ case.abstained }}
+        &middot; judge tokens: {{ case.usage.total_tokens }}
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+
+  <section>
+    <details class="config">
+      <summary>Config snapshot</summary>
+      <pre>{{ config_json }}</pre>
+    </details>
+  </section>
+</main>
+<script>
+(function () {
+  var typeFilter = document.getElementById("type-filter");
+  var failureFilter = document.getElementById("failure-filter");
+  var search = document.getElementById("search");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".case"));
+
+  function applyFilters() {
+    var type = typeFilter.value;
+    var failure = failureFilter.value;
+    var query = search.value.trim().toLowerCase();
+    cards.forEach(function (card) {
+      var matchesType = type === "all" || card.dataset.type === type;
+      var matchesFailure = failure === "all" || card.dataset.failure === failure;
+      var matchesQuery = !query || card.dataset.question.indexOf(query) !== -1;
+      card.style.display = matchesType && matchesFailure && matchesQuery ? "" : "none";
+    });
+  }
+
+  typeFilter.addEventListener("change", applyFilters);
+  failureFilter.addEventListener("change", applyFilters);
+  search.addEventListener("input", applyFilters);
+})();
+</script>
+</body>
+</html>

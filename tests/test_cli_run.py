@@ -68,6 +68,7 @@ def test_run_command_prints_summary_and_resumes(
         str(config_path),
         "--tests",
         str(test_set_path),
+        "--no-judge",
     ]
 
     first = runner.invoke(app, args)

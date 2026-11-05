@@ -18,6 +18,9 @@ from evalora.config import (
     load_config,
     redacted_config_snapshot,
 )
+from evalora.evaluate.aggregate import DEFAULT_RESAMPLES, DEFAULT_SEED, aggregate_run
+from evalora.evaluate.judges import judge_case
+from evalora.evaluate.prompts import JUDGE_PROMPT_VERSIONS
 from evalora.evaluate.retrieval import RetrievalSummary, aggregate_retrieval
 from evalora.generate.generator import (
     QUESTION_TYPE_ORDER,
@@ -27,9 +30,10 @@ from evalora.generate.generator import (
 from evalora.ingest.loaders import DocumentLoadError
 from evalora.llm.base import LLMError
 from evalora.llm.factory import build_llm_client
+from evalora.report.builder import build_html_report, compare_to_baseline
 from evalora.run.runner import TestSetError, hash_test_set, load_test_set, run_test_set
 from evalora.schemas import CaseResult
-from evalora.store.db import RunStore, StoreError, get_git_sha
+from evalora.store.db import RunRecord, RunStore, StoreError, get_git_sha
 
 
 class AppState:
@@ -160,6 +164,7 @@ def _summary_table(
 
 @app.command()
 def run(
+    ctx: typer.Context,
     run_name: Annotated[str, typer.Option("--run-name", help="Name for this run.")],
     config_path: Annotated[
         Path,
@@ -169,16 +174,32 @@ def run(
         Path,
         typer.Option("--tests", "-t", help="Path to the JSONL test set."),
     ] = Path("test_set.jsonl"),
+    no_judge: Annotated[
+        bool,
+        typer.Option("--no-judge", help="Skip LLM judging and store retrieval-only results."),
+    ] = False,
 ) -> None:
     """Run a test set against the configured pipeline."""
+    state = ctx.obj if isinstance(ctx.obj, AppState) else AppState()
     console = Console()
     try:
         config = load_config(config_path)
         cases = load_test_set(tests)
+        judge_client = (
+            None
+            if no_judge
+            else build_llm_client(model=config.judge.model, no_cache=state.no_cache)
+        )
         store = RunStore()
+        snapshot = redacted_config_snapshot(config)
+        snapshot["judge_runtime"] = {
+            "enabled": not no_judge,
+            "model": config.judge.model,
+            "prompt_versions": dict(JUDGE_PROMPT_VERSIONS),
+        }
         store.get_or_create_run(
             run_name,
-            config_snapshot=redacted_config_snapshot(config),
+            config_snapshot=snapshot,
             test_set_hash=hash_test_set(tests),
             case_count=len(cases),
             git_sha=get_git_sha(),
@@ -186,6 +207,12 @@ def run(
         completed = store.completed_case_ids(run_name)
         pending = [case for case in cases if case.case_id not in completed]
         if pending:
+
+            async def processor(result: CaseResult) -> CaseResult:
+                if judge_client is None:
+                    return result
+                return await judge_case(result, judge_client)
+
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -206,14 +233,85 @@ def run(
                         config.pipeline,
                         completed_case_ids=completed,
                         on_result=on_result,
+                        processor=processor,
                     )
                 )
         else:
             typer.echo("All cases already completed.")
         stored = store.load_results(run_name)
-    except (ConfigError, TestSetError, StoreError) as exc:
+    except (ConfigError, TestSetError, StoreError, LLMError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
     console.print(_summary_table(run_name, aggregate_retrieval(stored), len(stored), len(cases)))
     console.print(f"Stored results: {store.path}")
+    if not no_judge:
+        console.print(f"Build the full report with: evalora report --run {run_name}")
+
+
+def _ci_confidence(run: RunRecord) -> float:
+    gate = run.config_snapshot.get("gate")
+    if isinstance(gate, dict):
+        value = gate.get("ci_confidence", 0.95)
+        if isinstance(value, (int, float)):
+            return float(value)
+    return 0.95
+
+
+@app.command()
+def report(
+    run_name: Annotated[str, typer.Option("--run", help="Run name to report.")],
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Where to write the self-contained HTML report."),
+    ] = Path("report.html"),
+    baseline_name: Annotated[
+        str | None,
+        typer.Option("--baseline", help="Baseline run name for a diff section."),
+    ] = None,
+) -> None:
+    """Build a self-contained HTML report for a stored run."""
+    try:
+        store = RunStore()
+        run = store.get_run(run_name)
+        if run is None:
+            raise StoreError(f"run '{run_name}' not found")
+        results = store.load_results(run_name)
+        confidence = _ci_confidence(run)
+        aggregate = aggregate_run(
+            results,
+            confidence=confidence,
+            resamples=DEFAULT_RESAMPLES,
+            seed=DEFAULT_SEED,
+        )
+        comparison = None
+        if baseline_name is not None:
+            baseline_run = store.get_run(baseline_name)
+            if baseline_run is None:
+                raise StoreError(f"baseline run '{baseline_name}' not found")
+            baseline_results = store.load_results(baseline_name)
+            baseline_aggregate = aggregate_run(
+                baseline_results,
+                confidence=confidence,
+                resamples=DEFAULT_RESAMPLES,
+                seed=DEFAULT_SEED,
+            )
+            comparison = compare_to_baseline(
+                current=aggregate,
+                baseline=baseline_aggregate,
+                current_results=results,
+                baseline_results=baseline_results,
+                baseline_run_name=baseline_name,
+            )
+        build_html_report(
+            run=run,
+            results=results,
+            aggregate=aggregate,
+            out=out,
+            baseline=comparison,
+        )
+    except StoreError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(f"Wrote {out}")

@@ -16,7 +16,7 @@ from evalora.run.runner import (
     load_test_set,
     run_test_set,
 )
-from evalora.schemas import FailureCategory, QuestionType
+from evalora.schemas import CaseResult, FailureCategory, QuestionType
 from evalora.schemas import TestCase as EvalTestCase
 
 URL = "https://pipeline.test/query"
@@ -173,6 +173,26 @@ async def test_completed_cases_are_skipped() -> None:
 
     assert transport.calls == 1
     assert [result.case.case_id for result in results] == ["case-2"]
+
+
+async def test_processor_is_applied_before_the_callback() -> None:
+    transport = TrackingTransport(delay=0.0)
+    seen: list[CaseResult] = []
+
+    async def processor(result: CaseResult) -> CaseResult:
+        return result.model_copy(update={"faithfulness": 1.0})
+
+    results = await run_test_set(
+        [_case()],
+        _pipeline(),
+        transport=transport,
+        processor=processor,
+        on_result=seen.append,
+        max_retries=0,
+    )
+
+    assert results[0].faithfulness == 1.0
+    assert seen[0].faithfulness == 1.0
 
 
 def test_load_test_set_validates_jsonl(tmp_path: Path) -> None:

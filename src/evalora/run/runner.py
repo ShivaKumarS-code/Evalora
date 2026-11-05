@@ -23,6 +23,7 @@ from evalora.schemas import (
 )
 
 SleepFn = Callable[[float], Awaitable[None]]
+CaseProcessor = Callable[[CaseResult], Awaitable[CaseResult]]
 
 
 class TestSetError(Exception):
@@ -188,6 +189,7 @@ async def run_test_set(
     transport: httpx.AsyncBaseTransport | None = None,
     completed_case_ids: set[str] | None = None,
     on_result: Callable[[CaseResult], None] | None = None,
+    processor: CaseProcessor | None = None,
     max_retries: int = 2,
     retry_base_delay: float = 0.5,
     sleep: SleepFn = asyncio.sleep,
@@ -203,7 +205,7 @@ async def run_test_set(
 
         async def run_one(case: TestCase) -> CaseResult:
             async with semaphore:
-                return await run_case(
+                result = await run_case(
                     client,
                     case,
                     pipeline,
@@ -211,6 +213,9 @@ async def run_test_set(
                     retry_base_delay=retry_base_delay,
                     sleep=sleep,
                 )
+                if processor is not None:
+                    result = await processor(result)
+                return result
 
         tasks = [asyncio.create_task(run_one(case)) for case in pending]
         results_by_id: dict[str, CaseResult] = {}

@@ -7,6 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from evalora.llm.costs import UsageTotals
+
 
 class Chunk(BaseModel):
     chunk_id: str
@@ -69,6 +71,12 @@ class FailureCategory(StrEnum):
     PIPELINE_ERROR = "pipeline_error"
 
 
+class CorrectnessLabel(StrEnum):
+    CORRECT = "correct"
+    PARTIALLY_CORRECT = "partially_correct"
+    INCORRECT = "incorrect"
+
+
 class CaseResult(BaseModel):
     case: TestCase
     response: PipelineResponse
@@ -78,3 +86,5 @@ class CaseResult(BaseModel):
     correct: bool | None
     abstained: bool
     failure_category: FailureCategory | None
+    correctness_label: CorrectnessLabel | None = None
+    usage: UsageTotals = Field(default_factory=UsageTotals)

@@ -226,5 +226,75 @@ uvicorn remain in the dev dependency group so the local demo still runs. The
 committed test suite covers the runner, adapter, store and retrieval metrics
 independently of the toy app.
 
+## D028 Judge design
+
+Faithfulness is two LLM passes: claim extraction, then verification of each claim
+against the retrieved contexts only. Extraction resolves pronouns and ignores
+hedges and refusals. Zero claims produce `faithfulness = null`, not `1.0`; empty
+answers skip the judge entirely. Out-of-range evidence indices are normalized to
+`null`.
+
+Correctness compares the candidate answer to the gold answer and stores a
+three-way label (`correct`, `partially_correct`, `incorrect`). The boolean is
+true only for `correct`. Abstention uses refusal patterns first; the LLM fallback
+runs only for short hedge answers containing ambiguity markers such as "maybe"
+or "depends". Empty answers count as abstentions. All judge calls use temperature
+zero through `complete_json`, and judge prompts are versioned in
+`evaluate/prompts.py`. Versions are saved in the run config snapshot under
+`judge_runtime.prompt_versions`.
+
+## D029 Attribution decision table
+
+Attribution is pure logic and evaluates in this order:
+
+| Priority | Condition | Label |
+| --- | --- | --- |
+| 1 | `response.error` is set | `pipeline_error` |
+| 2 | Unanswerable, not abstained, at least one extracted claim | `failed_abstention` |
+| 3 | Answerable, abstained, gold chunk retrieved | `wrong_abstention` |
+| 4 | Answerable, not abstained, no gold chunk, answer wrong | `retrieval_failure` |
+| 5 | Answerable, gold chunk retrieved, any unsupported claim | `hallucination` |
+| 6 | Answerable, gold chunk retrieved, all claims supported, answer wrong | `generation_failure` |
+| 7 | Otherwise, including unjudged correctness | `null` |
+
+Unanswerable abstentions pass. Answerable abstentions without a gold chunk pass.
+A correct answer without a gold chunk also has no failure label.
+
+## D030 Aggregation
+
+`aggregate_run` computes overall and per-type means with seeded bootstrap
+confidence intervals (1000 resamples, seed 42, confidence from
+`gate.ci_confidence` or 0.95). It reports counts for every failure category,
+latency p50/p95, and token/cost totals from per-case judge usage. Metrics with
+zero observations have `n=0` and `null` values rather than fabricated zeros.
+
+## D031 CaseResult additions
+
+`CaseResult` gains `correctness_label` and `usage` (calls, tokens, cost). Both
+have defaults, so results stored before Phase 3 load unchanged with
+`correctness_label=None` and zero usage.
+
+## D032 Report
+
+The report is one HTML file built with Jinja2: inline CSS, inline vanilla JS, no
+CDN or external assets. Summary cards show means and confidence intervals;
+tables break metrics down by question type and failure category. Case cards
+include the question, gold answer, retrieved contexts, answer, claim verdicts
+with unsupported claims highlighted, and the failure label. Filters use
+`data-*` attributes and plain JavaScript.
+
+The optional baseline section compares metric means and lists cases whose
+`failure_category` changed from `null` (pass) to a label (fail), matched by
+`case_id`. The report command makes no LLM calls.
+
+## D033 Judging in `evalora run`
+
+`run` judges each case by default through `judge_case`, then saves the judged
+result as each case completes. `--no-judge` keeps the Phase 2 retrieval-only
+behavior and requires no API key. Pipeline errors skip judge calls and are stored
+as `pipeline_error`. Judge failures propagate, so a broken judge is visible; any
+results already saved remain resumable.
+
+
 
 
