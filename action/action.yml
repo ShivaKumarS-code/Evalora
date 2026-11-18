@@ -1,0 +1,136 @@
+name: "Evalora RAG quality gate"
+description: >-
+  Reuse or generate a RAG test set, run the evaluation against a pipeline,
+  gate the result against a baseline, upload the HTML report, and post a
+  pull-request summary.
+
+inputs:
+  api-key:
+    description: "Gemini API key used for generation and judging."
+    required: true
+  config-path:
+    description: "Path to the evalora config file."
+    default: "evalora.yaml"
+  test-set:
+    description: "Path to the committed test set JSONL."
+    default: "test_set.jsonl"
+  generate:
+    description: "Generate the test set when the file is missing ('true'/'false')."
+    default: "true"
+  run-name:
+    description: "Name for this evaluation run."
+    default: "ci"
+  baseline:
+    description: "Baseline alias to gate against."
+    default: "main"
+  baseline-file:
+    description: "Optional baseline JSON artifact to import before gating."
+    default: ""
+  max-cases:
+    description: "Optional cap on the number of cases to run."
+    default: ""
+  max-budget-usd:
+    description: "Optional hard budget (USD) for judge spend."
+    default: ""
+  package:
+    description: "Where to install evalora from (PyPI name or git URL)."
+    default: "git+https://github.com/ShivaKumarS-code/Evalora@main"
+  upload-report:
+    description: "Upload report.html as a workflow artifact ('true'/'false')."
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Install evalora
+      shell: bash
+      run: uv tool install "${{ inputs.package }}"
+
+    - name: Import baseline
+      if: ${{ inputs.baseline-file != '' }}
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.baseline-file }}" ]; then
+          evalora baseline import --file "${{ inputs.baseline-file }}" --as "${{ inputs.baseline }}"
+        else
+          echo "::warning::baseline-file '${{ inputs.baseline-file }}' not found; skipping import"
+        fi
+
+    - name: Generate test set if missing
+      if: ${{ inputs.generate == 'true' }}
+      shell: bash
+      env:
+        GEMINI_API_KEY: ${{ inputs.api-key }}
+      run: |
+        if [ ! -f "${{ inputs.test-set }}" ]; then
+          echo "No test set at ${{ inputs.test-set }}; generating one."
+          evalora generate --config "${{ inputs.config-path }}" --out "${{ inputs.test-set }}"
+        else
+          echo "Reusing committed test set at ${{ inputs.test-set }}."
+        fi
+
+    - name: Run evaluation
+      shell: bash
+      env:
+        GEMINI_API_KEY: ${{ inputs.api-key }}
+      run: |
+        args=(--config "${{ inputs.config-path }}" --tests "${{ inputs.test-set }}" --run-name "${{ inputs.run-name }}")
+        if [ -n "${{ inputs.max-cases }}" ]; then
+          args+=(--max-cases "${{ inputs.max-cases }}")
+        fi
+        if [ -n "${{ inputs.max-budget-usd }}" ]; then
+          args+=(--max-budget-usd "${{ inputs.max-budget-usd }}")
+        fi
+        evalora run "${args[@]}"
+
+    - name: Build report and gate
+      id: gate
+      shell: bash
+      run: |
+        evalora report --run "${{ inputs.run-name }}" --baseline "${{ inputs.baseline }}" --out report.html
+        set +e
+        evalora gate \
+          --run "${{ inputs.run-name }}" \
+          --baseline "${{ inputs.baseline }}" \
+          --markdown gate_summary.md
+        status=$?
+        set -e
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - name: Upload report artifact
+      if: ${{ inputs.upload-report == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: evalora-report
+        path: report.html
+
+    - name: Post pull-request summary
+      if: ${{ always() && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          if (!fs.existsSync('gate_summary.md')) {
+            core.info('No gate summary to post.');
+            return;
+          }
+          const body = fs.readFileSync('gate_summary.md', 'utf8');
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body,
+          });
+
+    - name: Fail on regression
+      if: ${{ steps.gate.outputs.status != '0' }}
+      shell: bash
+      run: |
+        echo "Quality gate failed with exit code ${{ steps.gate.outputs.status }}."
+        exit 1

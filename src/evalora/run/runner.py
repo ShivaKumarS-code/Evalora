@@ -24,6 +24,7 @@ from evalora.schemas import (
 
 SleepFn = Callable[[float], Awaitable[None]]
 CaseProcessor = Callable[[CaseResult], Awaitable[CaseResult]]
+StopCheck = Callable[[], bool]
 
 
 class TestSetError(Exception):
@@ -193,7 +194,15 @@ async def run_test_set(
     max_retries: int = 2,
     retry_base_delay: float = 0.5,
     sleep: SleepFn = asyncio.sleep,
+    stop_check: StopCheck | None = None,
 ) -> list[CaseResult]:
+    """Run pending cases with bounded concurrency and per-case error capture.
+
+    ``stop_check`` is polled before each case starts. When it returns True
+    the case is skipped entirely: it is not run, not stored, and not counted
+    in the returned list, so an interrupted run stays resumable. The gate
+    budget uses this to stop scheduling cases once spend crosses a limit.
+    """
     completed = completed_case_ids or set()
     pending = [case for case in cases if case.case_id not in completed]
     if not pending:
@@ -203,8 +212,10 @@ async def run_test_set(
     timeout = httpx.Timeout(pipeline.timeout_s)
     async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
 
-        async def run_one(case: TestCase) -> CaseResult:
+        async def run_one(case: TestCase) -> CaseResult | None:
             async with semaphore:
+                if stop_check is not None and stop_check():
+                    return None
                 result = await run_case(
                     client,
                     case,
@@ -221,8 +232,10 @@ async def run_test_set(
         results_by_id: dict[str, CaseResult] = {}
         for completed_task in asyncio.as_completed(tasks):
             result = await completed_task
+            if result is None:
+                continue
             results_by_id[result.case.case_id] = result
             if on_result is not None:
                 on_result(result)
 
-    return [results_by_id[case.case_id] for case in pending]
+    return [results_by_id[case.case_id] for case in pending if case.case_id in results_by_id]

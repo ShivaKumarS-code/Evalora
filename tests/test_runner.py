@@ -195,6 +195,42 @@ async def test_processor_is_applied_before_the_callback() -> None:
     assert seen[0].faithfulness == 1.0
 
 
+@respx.mock
+async def test_stop_check_skips_remaining_cases() -> None:
+    route = respx.post(URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "answer": "1994",
+                "contexts": [{"id": "c1", "text": GOLD_TEXT}],
+            },
+        )
+    )
+    # The flag flips inside the processor, which runs within the semaphore
+    # block, so with concurrency 1 the later cases always observe it.
+    flag = [False]
+
+    async def processor(result: CaseResult) -> CaseResult:
+        flag[0] = True
+        return result
+
+    cases = [_case("case-1"), _case("case-2"), _case("case-3")]
+    stored: list[str] = []
+
+    results = await run_test_set(
+        cases,
+        _pipeline(concurrency=1),
+        max_retries=0,
+        processor=processor,
+        on_result=lambda result: stored.append(result.case.case_id),
+        stop_check=lambda: flag[0],
+    )
+
+    assert route.call_count == 1
+    assert [result.case.case_id for result in results] == ["case-1"]
+    assert stored == ["case-1"]
+
+
 def test_load_test_set_validates_jsonl(tmp_path: Path) -> None:
     path = tmp_path / "test_set.jsonl"
     path.write_text(

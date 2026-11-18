@@ -16,6 +16,8 @@ from evalora import __version__
 from evalora.config import (
     DEFAULT_CONFIG_YAML,
     ConfigError,
+    GateConfig,
+    ThresholdConfig,
     load_config,
     redacted_config_snapshot,
 )
@@ -23,6 +25,21 @@ from evalora.evaluate.aggregate import DEFAULT_RESAMPLES, DEFAULT_SEED, aggregat
 from evalora.evaluate.judges import judge_case
 from evalora.evaluate.prompts import CLAIM_VERIFICATION_PROMPTS, JUDGE_PROMPT_VERSIONS
 from evalora.evaluate.retrieval import RetrievalSummary, aggregate_retrieval
+from evalora.gate.baseline import (
+    BaselineFileError,
+    export_baseline,
+    import_baseline,
+    read_baseline_file,
+    write_baseline_file,
+)
+from evalora.gate.compare import (
+    DEFAULT_RESAMPLES as GATE_RESAMPLES,
+)
+from evalora.gate.compare import (
+    DEFAULT_SEED as GATE_SEED,
+)
+from evalora.gate.compare import GateError, compare_runs
+from evalora.gate.markdown import render_markdown
 from evalora.generate.generator import (
     QUESTION_TYPE_ORDER,
     GenerationError,
@@ -32,6 +49,7 @@ from evalora.ingest.loaders import DocumentLoadError
 from evalora.llm.base import LLMError
 from evalora.llm.factory import build_llm_client
 from evalora.report.builder import build_html_report, compare_to_baseline
+from evalora.run.estimate import estimate_run
 from evalora.run.runner import TestSetError, hash_test_set, load_test_set, run_test_set
 from evalora.schemas import CaseResult
 from evalora.store.db import RunRecord, RunStore, StoreError, get_git_sha
@@ -204,6 +222,28 @@ def run(
         bool,
         typer.Option("--no-judge", help="Skip LLM judging and store retrieval-only results."),
     ] = False,
+    max_cases: Annotated[
+        int | None,
+        typer.Option("--max-cases", min=1, help="Run at most this many pending cases."),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="Print a call and cost estimate for the pending cases and exit.",
+        ),
+    ] = False,
+    max_budget_usd: Annotated[
+        float | None,
+        typer.Option(
+            "--max-budget-usd",
+            min=0.0,
+            help=(
+                "Abort when projected judge spend exceeds this budget. "
+                "Needs a model with verified pricing."
+            ),
+        ),
+    ] = None,
 ) -> None:
     """Run a test set against the configured pipeline."""
     state = ctx.obj if isinstance(ctx.obj, AppState) else AppState()
@@ -211,12 +251,48 @@ def run(
     try:
         config = load_config(config_path)
         cases = load_test_set(tests)
+        store = RunStore()
+        if dry_run:
+            existing = store.get_run(run_name)
+            completed = store.completed_case_ids(run_name) if existing is not None else set()
+            pending = [case for case in cases if case.case_id not in completed]
+            if max_cases is not None:
+                pending = pending[:max_cases]
+            estimate = estimate_run(
+                pending,
+                provider=config.judge.provider,
+                model=config.judge.model,
+                judge_enabled=not no_judge,
+            )
+            price_note = (
+                f"{config.judge.model}"
+                if estimate.price_known
+                else f"no verified price for '{config.judge.model}', reported as $0"
+            )
+            typer.echo(
+                f"Dry run for '{run_name}': {estimate.pending_cases} pending of {len(cases)} cases"
+            )
+            typer.echo(f"  pipeline calls: {estimate.pipeline_calls}")
+            typer.echo(f"  judge calls: ~{estimate.judge_calls}")
+            typer.echo(
+                f"  estimated tokens: ~{estimate.estimated_prompt_tokens} prompt, "
+                f"~{estimate.estimated_completion_tokens} completion"
+            )
+            typer.echo(f"  approximate cost: ${estimate.estimated_cost_usd:.6f} ({price_note})")
+            if max_budget_usd is not None and estimate.price_known and not no_judge:
+                if estimate.estimated_cost_usd > max_budget_usd:
+                    typer.echo(
+                        f"  projected spend exceeds --max-budget-usd "
+                        f"${max_budget_usd:.2f}; the run would abort"
+                    )
+                else:
+                    typer.echo(f"  within budget ${max_budget_usd:.2f}")
+            return
         judge_client = (
             None
             if no_judge
             else build_llm_client(model=config.judge.model, no_cache=state.no_cache)
         )
-        store = RunStore()
         snapshot = redacted_config_snapshot(config)
         snapshot["judge_runtime"] = {
             "enabled": not no_judge,
@@ -232,12 +308,40 @@ def run(
         )
         completed = store.completed_case_ids(run_name)
         pending = [case for case in cases if case.case_id not in completed]
+        if max_cases is not None:
+            pending = pending[:max_cases]
+        budget_enforceable = False
+        if max_budget_usd is not None and not no_judge:
+            estimate = estimate_run(
+                pending,
+                provider=config.judge.provider,
+                model=config.judge.model,
+                judge_enabled=True,
+            )
+            if not estimate.price_known:
+                typer.echo(
+                    f"warning: no verified price for '{config.judge.model}'; "
+                    "--max-budget-usd cannot be enforced",
+                    err=True,
+                )
+            elif estimate.estimated_cost_usd > max_budget_usd:
+                raise TestSetError(
+                    f"projected spend ${estimate.estimated_cost_usd:.6f} exceeds "
+                    f"--max-budget-usd ${max_budget_usd:.2f}; aborting before any "
+                    "calls (reduce --max-cases or use --no-judge to cut cost)"
+                )
+            else:
+                budget_enforceable = True
         if pending:
+            spent = 0.0
 
             async def processor(result: CaseResult) -> CaseResult:
                 if judge_client is None:
                     return result
                 return await judge_case(result, judge_client)
+
+            def stop_check() -> bool:
+                return budget_enforceable and spent > (max_budget_usd or 0.0)
 
             with Progress(
                 SpinnerColumn(),
@@ -250,17 +354,27 @@ def run(
                 task_id = progress.add_task(f"Running {run_name}", total=len(pending))
 
                 def on_result(result: CaseResult) -> None:
+                    nonlocal spent
+                    spent += result.usage.cost_usd
                     store.save_result(run_name, result)
                     progress.advance(task_id)
 
-                asyncio.run(
+                executed = asyncio.run(
                     run_test_set(
-                        cases,
+                        pending,
                         config.pipeline,
-                        completed_case_ids=completed,
+                        completed_case_ids=set(),
                         on_result=on_result,
                         processor=processor,
+                        stop_check=stop_check,
                     )
+                )
+            skipped = len(pending) - len(executed)
+            if skipped:
+                typer.echo(
+                    f"warning: budget reached, {skipped} case(s) skipped; "
+                    "rerun with a higher --max-budget-usd to resume",
+                    err=True,
                 )
         else:
             typer.echo("All cases already completed.")
@@ -319,10 +433,13 @@ def report(
         )
         comparison = None
         if baseline_name is not None:
-            baseline_run = store.get_run(baseline_name)
+            resolved_baseline = _resolve_baseline(store, baseline_name)
+            if resolved_baseline is None:
+                raise StoreError(f"baseline '{baseline_name}' not found")
+            baseline_run = store.get_run(resolved_baseline)
             if baseline_run is None:
-                raise StoreError(f"baseline run '{baseline_name}' not found")
-            baseline_results = store.load_results(baseline_name)
+                raise StoreError(f"baseline run '{resolved_baseline}' not found")
+            baseline_results = store.load_results(resolved_baseline)
             baseline_aggregate = aggregate_run(
                 baseline_results,
                 confidence=confidence,
@@ -334,7 +451,7 @@ def report(
                 baseline=baseline_aggregate,
                 current_results=results,
                 baseline_results=baseline_results,
-                baseline_run_name=baseline_name,
+                baseline_run_name=resolved_baseline,
             )
         validation_path = judge_validation_path
         if validation_path is None and Path("judge_validation.json").is_file():
@@ -570,3 +687,211 @@ def ragtruth_sample(
         f"supported={manifest.supported_items}, eligible={manifest.eligible_count}"
     )
     typer.echo(f"  license={manifest.license}; manifest={manifest_path}")
+
+
+baseline_app = typer.Typer(help="Manage baseline runs for the quality gate.")
+app.add_typer(baseline_app, name="baseline")
+
+
+@baseline_app.command("set")
+def baseline_set(
+    run_name: Annotated[str, typer.Option("--run", help="Run to register as a baseline.")],
+    name: Annotated[
+        str,
+        typer.Option("--as", help="Baseline alias to create or replace."),
+    ] = "main",
+) -> None:
+    """Point a named baseline at a stored run."""
+    try:
+        store = RunStore()
+        if store.get_run(run_name) is None:
+            raise StoreError(f"run '{run_name}' not found")
+        store.set_baseline(name, run_name)
+    except StoreError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(f"Baseline '{name}' now points at run '{run_name}'")
+
+
+@baseline_app.command("export")
+def baseline_export(
+    run_name: Annotated[str, typer.Option("--run", help="Run to export as a baseline.")],
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Where to write the baseline JSON."),
+    ] = Path("baseline.json"),
+) -> None:
+    """Export a run as a portable baseline JSON artifact."""
+    try:
+        store = RunStore()
+        export = export_baseline(store, run_name)
+        write_baseline_file(export, out)
+    except (StoreError, OSError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(f"Wrote baseline for run '{run_name}' ({len(export.results)} results) to {out}")
+
+
+@baseline_app.command("import")
+def baseline_import(
+    file: Annotated[Path, typer.Option("--file", "-f", help="Baseline JSON to import.")],
+    name: Annotated[
+        str,
+        typer.Option("--as", help="Baseline alias to point at the imported run."),
+    ] = "main",
+) -> None:
+    """Import a baseline JSON artifact and register it as a named baseline."""
+    try:
+        export = read_baseline_file(file)
+        store = RunStore()
+        record = import_baseline(store, export, baseline_name=name)
+    except (BaselineFileError, StoreError, OSError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(
+        f"Imported run '{record.run_name}' ({len(export.results)} results) as baseline '{name}'"
+    )
+
+
+def _default_baseline_name(run: RunRecord) -> str:
+    gate = run.config_snapshot.get("gate")
+    if isinstance(gate, dict):
+        baseline = gate.get("baseline")
+        if isinstance(baseline, str) and baseline:
+            return baseline
+    return "main"
+
+
+def _gate_settings(
+    run: RunRecord, config_path: Path | None
+) -> tuple[dict[str, ThresholdConfig], float]:
+    """Gate thresholds and CI confidence from an explicit config or the snapshot."""
+    if config_path is not None:
+        config = load_config(config_path)
+        return dict(config.gate.thresholds), config.gate.ci_confidence
+    try:
+        raw = run.config_snapshot.get("gate")
+        gate = GateConfig.model_validate(raw) if raw is not None else GateConfig()
+    except ValidationError:
+        gate = GateConfig()
+    return dict(gate.thresholds), gate.ci_confidence
+
+
+def _resolve_baseline(store: RunStore, name: str) -> str | None:
+    """Resolve a baseline alias first, then a direct run name."""
+    alias = store.get_baseline(name)
+    if alias is not None:
+        return alias
+    if store.get_run(name) is not None:
+        return name
+    return None
+
+
+@app.command()
+def gate(
+    run_name: Annotated[str, typer.Option("--run", help="Run to evaluate against the baseline.")],
+    baseline_name: Annotated[
+        str | None,
+        typer.Option(
+            "--baseline",
+            help="Baseline alias or run name; defaults to the config's gate.baseline.",
+        ),
+    ] = None,
+    config_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--config",
+            "-c",
+            help="Optional config for gate thresholds; defaults to the run snapshot.",
+        ),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown", help="Write a PR-comment markdown summary to this file."),
+    ] = None,
+    resamples: Annotated[
+        int,
+        typer.Option("--resamples", min=1, help="Bootstrap resamples for the diff CI."),
+    ] = GATE_RESAMPLES,
+    seed: Annotated[int, typer.Option("--seed", help="Bootstrap seed.")] = GATE_SEED,
+) -> None:
+    """Fail (exit 1) when quality regressed against the baseline.
+
+    Tool errors exit with code 2; a regression exits with code 1.
+    """
+    try:
+        store = RunStore()
+        run = store.get_run(run_name)
+        if run is None:
+            raise StoreError(f"run '{run_name}' not found")
+        name = baseline_name or _default_baseline_name(run)
+        resolved = _resolve_baseline(store, name)
+        if resolved is None:
+            raise StoreError(
+                f"baseline '{name}' not found; create it with "
+                "`evalora baseline set --run <name> --as " + name + "`"
+            )
+        current_results = store.load_results(run_name)
+        baseline_results = store.load_results(resolved)
+        thresholds, confidence = _gate_settings(run, config_path)
+        report = compare_runs(
+            current_results,
+            baseline_results,
+            run_name=run_name,
+            baseline_run_name=resolved,
+            thresholds=thresholds,
+            confidence=confidence,
+            resamples=resamples,
+            seed=seed,
+        )
+    except (StoreError, ConfigError, GateError, OSError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    console = Console()
+    icon = "passed" if report.passed else "FAILED"
+    table = Table(title=f"Quality gate: {run_name} vs {report.baseline_run_name} ({icon})")
+    table.add_column("Metric", style="bold")
+    table.add_column("Baseline", justify="right")
+    table.add_column("Current", justify="right")
+    table.add_column("Diff", justify="right")
+    table.add_column("CI", justify="right")
+    table.add_column("Verdict")
+    for metric in report.metrics:
+        baseline = "n/a" if metric.baseline is None else f"{metric.baseline:.3f}"
+        current = "n/a" if metric.current is None else f"{metric.current:.3f}"
+        diff = "n/a" if metric.diff is None else f"{metric.diff:+.3f}"
+        span = (
+            "n/a"
+            if metric.ci_low is None or metric.ci_high is None
+            else f"[{metric.ci_low:.3f}, {metric.ci_high:.3f}]"
+        )
+        verdict = "fail" if metric.regressed else "pass"
+        table.add_row(metric.metric, baseline, current, diff, span, verdict)
+    console.print(table)
+    if report.new_failures_by_category:
+        console.print("New failures by category:")
+        for category, count in sorted(
+            report.new_failures_by_category.items(), key=lambda item: item[0].value
+        ):
+            console.print(f"  {category.value}: {count}")
+    for regressed in report.regressed_cases:
+        console.print(
+            f"  regressed: {regressed.case_id} ({regressed.question_type}) "
+            f"now `{regressed.current_category.value if regressed.current_category else 'none'}`"
+        )
+
+    if markdown_out is not None:
+        try:
+            markdown_out.parent.mkdir(parents=True, exist_ok=True)
+            markdown_out.write_text(render_markdown(report), encoding="utf-8")
+        except OSError as exc:
+            typer.echo(f"error: could not write markdown summary: {exc}", err=True)
+            raise typer.Exit(code=2) from exc
+        typer.echo(f"Wrote markdown summary to {markdown_out}")
+
+    if not report.passed:
+        raise typer.Exit(code=1)

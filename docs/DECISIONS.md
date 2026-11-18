@@ -351,3 +351,73 @@ second cap. This avoids free-tier 429s and rides out transient 503s.
 `judge_validation.json` from the working directory. The report shows precision,
 recall, F1, accuracy and kappa with CIs, plus the confusion matrix and the
 dataset/model/prompt metadata.
+
+## D040 Gate decision rule
+
+The gate compares per-case metric values paired by `case_id`, bootstraps the
+mean paired difference (seeded, 1000 resamples by default), and fails a metric
+only when the mean drop exceeds the configured `max_drop` and the confidence
+interval of the difference excludes zero. A drop inside the CI is treated as
+noise and passes, which is what keeps run-to-run variance from failing builds.
+When no case ids overlap, pairing is impossible, so the gate falls back to an
+independent two-sample bootstrap and says so in the comparison reasons. The
+same paired rule is deliberately not applied to per-question-type breakdowns:
+only the configured top-level metrics are gated.
+
+## D041 Absolute floors
+
+`gate.thresholds.<metric>.min_absolute` is checked against the current run's
+point estimate directly: falling below the floor fails without any CI
+condition. A floor backed by a CI would let a run sit under the floor forever
+while overlapping zero, which defeats the point of a hard minimum.
+
+## D042 Gate exit codes
+
+`evalora gate` exits 0 on pass, 1 on a quality regression, and 2 on tool
+errors (missing run, missing baseline, invalid config, no comparable data).
+Tool errors must not be confused with regressions in CI, and a regression
+must fail the build while still uploading the report and posting the summary,
+so the action records the exit code, publishes the artifacts, and only then
+fails the job.
+
+## D043 Baseline export and import
+
+A baseline is a named alias in SQLite pointing at a stored run. The JSON
+artifact carries the run record and its full results. Import recreates the run
+in the target database and registers the alias; it is idempotent because
+results are upserted, and a test-set hash mismatch raises the store's
+mismatch error rather than silently mixing test sets. `evalora gate --baseline`
+resolves an alias first and a direct run name second; `evalora report
+--baseline` resolves the same way.
+
+## D044 Missing gate data
+
+A gated metric with no per-case data on both sides is skipped with an
+explicit reason instead of failing, because partial runs legitimately lack
+some metrics. But a current run with no data for any gated metric fails the
+gate outright, so a retrieval-only run (`--no-judge`) can never silently pass
+a faithfulness gate.
+
+## D045 Cost estimates and the budget flag
+
+`--dry-run` estimates calls before running: per judged case 1 claim
+extraction, 3 estimated claim verifications, a 0.25 chance of the abstention
+LLM fallback, and 1 correctness call for answerable cases, at an estimated
+700 prompt and 80 completion tokens per call. These constants are upper
+bounds and are documented as such. `--max-budget-usd` aborts before the run
+when the projection exceeds it, and the runner polls a stop guard before
+starting each case so actual spend crossing the budget stops scheduling new
+cases; skipped cases stay resumable. Both checks only run when the judge model
+has a verified price entry, so unknown pricing prints a warning instead of
+enforcing a meaningless $0 budget.
+
+## D046 GitHub Action shape
+
+`action/action.yml` is a composite action rather than a Docker action: it
+installs evalora with `uv tool install` from a configurable source (git URL
+now, PyPI name after publishing), imports an optional committed baseline
+JSON, reuses a committed test set or generates one, runs the evaluation, then
+builds the report and runs the gate in one step so the markdown summary and
+the exit code are captured together. The report is uploaded as an artifact,
+the summary is posted to the PR, and the job fails only after both are
+published, preserving the artifacts on a red build.
