@@ -18,6 +18,7 @@ class AsyncRateLimiter:
         *,
         max_concurrency: int = 4,
         requests_per_minute: int = 60,
+        burst: int = 1,
         clock: Callable[[], float] = time.monotonic,
         sleep: SleepFn = asyncio.sleep,
     ) -> None:
@@ -25,10 +26,12 @@ class AsyncRateLimiter:
             raise ValueError("max_concurrency must be at least 1")
         if requests_per_minute < 1:
             raise ValueError("requests_per_minute must be at least 1")
+        if burst < 1:
+            raise ValueError("burst must be at least 1")
         self.max_concurrency = max_concurrency
         self.requests_per_minute = requests_per_minute
         self._rate_per_second = requests_per_minute / 60.0
-        self._capacity = float(requests_per_minute)
+        self._capacity = float(burst)
         self._tokens = self._capacity
         self._updated_at = clock()
         self._clock = clock

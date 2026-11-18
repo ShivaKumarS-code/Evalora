@@ -40,10 +40,36 @@ CLAIM_VERIFICATION_PROMPT = JudgePrompt(
     user=(
         "Decide whether the claim is supported by the provided context. Use only the "
         "context, not outside knowledge. Return supported, the 0-based index of the single "
-        "context that best supports the claim (or null), and a short rationale.\n\n"
+        "context that best supports the claim (or null), and a short rationale.\n"
+        "Return JSON with exactly these keys: supported (boolean), evidence_context_index "
+        "(0-based integer or null), rationale (string).\n\n"
         "Claim:\n{claim}\n\nContext:\n{contexts}"
     ),
 )
+
+CLAIM_VERIFICATION_PROMPT_STRICT = JudgePrompt(
+    name="claim_verification_strict",
+    version="v2",
+    system=(
+        "You verify claims using retrieved context only. "
+        "Return only JSON matching the requested schema."
+    ),
+    user=(
+        "Decide whether the claim is directly supported by the provided context. Be strict: "
+        "mark it supported only when the context explicitly states the claim or a direct "
+        "paraphrase that adds no details. Do not use outside knowledge. Return supported, the "
+        "0-based index of the single context that supports the claim (or null), and a short "
+        "rationale.\n"
+        "Return JSON with exactly these keys: supported (boolean), evidence_context_index "
+        "(0-based integer or null), rationale (string).\n\n"
+        "Claim:\n{claim}\n\nContext:\n{contexts}"
+    ),
+)
+
+CLAIM_VERIFICATION_PROMPTS: dict[str, JudgePrompt] = {
+    "v1": CLAIM_VERIFICATION_PROMPT,
+    "v2": CLAIM_VERIFICATION_PROMPT_STRICT,
+}
 
 CORRECTNESS_PROMPT = JudgePrompt(
     name="correctness",
@@ -80,6 +106,7 @@ JUDGE_PROMPT_VERSIONS: dict[str, str] = {
     for prompt in (
         CLAIM_EXTRACTION_PROMPT,
         CLAIM_VERIFICATION_PROMPT,
+        CLAIM_VERIFICATION_PROMPT_STRICT,
         CORRECTNESS_PROMPT,
         ABSTENTION_PROMPT,
     )

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evalora label sheet - {{ sheet.run_name }}</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --text: #1f2933;
+      --muted: #667085;
+      --border: #d9dee7;
+      --accent: #2f5d8a;
+      --support: #1f7a4d;
+      --unsupported: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 18px; margin: 0; }
+    .meta { color: var(--muted); font-size: 13px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+    .instructions {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .toolbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:disabled { background: #c7d2dd; border-color: #c7d2dd; cursor: not-allowed; }
+    .progress { font-weight: 600; }
+    .item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .item-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+    .item-id { color: var(--muted); font-size: 12px; }
+    .question { font-size: 13px; color: var(--muted); margin: 4px 0 10px; }
+    .claim {
+      font-size: 16px;
+      font-weight: 600;
+      background: #eef4fb;
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .field-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; margin: 10px 0 4px; }
+    .answer, .context {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+    .context { margin-bottom: 8px; }
+    .ctx-id { color: var(--muted); font-size: 12px; }
+    .choices { display: flex; gap: 22px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .choices label { display: flex; gap: 6px; align-items: center; font-weight: 600; cursor: pointer; }
+    .choices .supported { color: var(--support); }
+    .choices .unsupported { color: var(--unsupported); }
+    input[type="radio"] { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Label sheet: {{ sheet.run_name }}</h1>
+    <div class="meta">
+      {{ item_count }} claim item{% if item_count != 1 %}s{% endif %}
+      {% if sheet.sampled %}&middot; sampled from {{ sheet.available_count }} with seed {{ sheet.seed }}{% endif %}
+    </div>
+  </div>
+  <div class="toolbar">
+    <span class="progress" id="progress">0 / {{ item_count }} labelled</span>
+    <button id="download" disabled>Download labels.jsonl</button>
+  </div>
+</header>
+<main>
+  <div class="instructions">
+    Label each claim as <strong>supported</strong> only when the provided contexts state or
+    directly imply it. Otherwise label it <strong>unsupported</strong>. After all items
+    are labelled, download the file and run
+    <code>evalora validate-judge --labels labels.jsonl</code>.
+  </div>
+
+  {% for item in sheet.items %}
+  <article class="item" id="item-{{ loop.index0 }}">
+    <div class="item-head">
+      <span class="item-id">{{ item.item_id }}</span>
+      {% if item.case_id %}<span class="item-id">case {{ item.case_id }}</span>{% endif %}
+    </div>
+    {% if item.question %}<div class="question">{{ item.question }}</div>{% endif %}
+    <div class="claim">{{ item.claim }}</div>
+
+    <div class="field-label">Answer</div>
+    <div class="answer">{{ item.answer if item.answer is not none else "n/a" }}</div>
+
+    <div class="field-label">Contexts</div>
+    {% if item.contexts %}
+      {% for context in item.contexts %}
+      <div class="context">
+        <div class="ctx-id">id: {{ context.id if context.id is not none else "none" }}</div>
+        <div>{{ context.text }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p class="meta">No contexts supplied.</p>
+    {% endif %}
+
+    <div class="choices">
+      <label class="supported">
+        <input type="radio" name="item-{{ loop.index0 }}" value="supported" data-index="{{ loop.index0 }}">
+        Supported
+      </label>
+      <label class="unsupported">
+        <input type="radio" name="item-{{ loop.index0 }}" value="unsupported" data-index="{{ loop.index0 }}">
+        Unsupported
+      </label>
+    </div>
+  </article>
+  {% endfor %}
+</main>
+<script type="application/json" id="items-data">{{ items_data | tojson }}</script>
+<script>
+(function () {
+  var items = JSON.parse(document.getElementById("items-data").textContent);
+  var state = items.map(function (item) { return item.label || null; });
+  var progress = document.getElementById("progress");
+  var download = document.getElementById("download");
+
+  function updateProgress() {
+    var done = state.filter(function (label) { return label !== null; }).length;
+    progress.textContent = done + " / " + items.length + " labelled";
+    download.disabled = done !== items.length;
+  }
+
+  document.querySelectorAll('input[type="radio"][data-index]').forEach(function (input) {
+    input.addEventListener("change", function () {
+      state[Number(input.dataset.index)] = input.value;
+      updateProgress();
+    });
+  });
+
+  download.addEventListener("click", function () {
+    if (state.some(function (label) { return label === null; })) {
+      return;
+    }
+    var lines = items.map(function (item, index) {
+      var copy = Object.assign({}, item);
+      copy.label = state[index];
+      return JSON.stringify(copy);
+    });
+    var blob = new Blob([lines.join("\n") + "\n"], { type: "application/jsonl" });
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "labels.jsonl";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  });
+
+  updateProgress();
+})();
+</script>
+</body>
+</html>

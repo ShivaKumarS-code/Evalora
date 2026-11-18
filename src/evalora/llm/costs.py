@@ -20,6 +20,8 @@ class ModelPrice:
 
 
 PRICES: dict[tuple[str, str], ModelPrice] = {
+    # gemini-3.5-flash-lite is the default but has no verified price entry yet.
+    # Unknown models report zero cost rather than a guessed number.
     ("gemini", "gemini-2.0-flash"): ModelPrice(input_per_mtok=0.10, output_per_mtok=0.40),
 }
 

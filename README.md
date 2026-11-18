@@ -40,6 +40,13 @@ Evalora generates a test suite from your documents, runs it against any RAG pipe
   and cost totals, and seeded bootstrap confidence intervals.
 - A self-contained HTML report with summary cards, breakdown tables, filterable
   case drill-down, unsupported claims highlighted, and an optional baseline diff.
+  It can embed judge-validation agreement numbers when a validation summary is
+  available.
+- Judge validation tooling: `evalora export-labels` writes a local HTML claim
+  labelling page; `evalora validate-judge` reports precision, recall, F1,
+  accuracy, Cohen's kappa and a confusion matrix with bootstrap CIs.
+- `evalora ragtruth-sample` loads MIT-licensed RAGTruth data and draws a
+  reproducible labelled sample with a fixed seed and manifest.
 - SQLite storage for runs, results and baselines. Runs resume by skipping case
   IDs already stored under the same run name.
 - The adapter contract is documented in
@@ -69,6 +76,8 @@ uv run evalora init
 uv run evalora generate --config evalora.yaml --out test_set.jsonl --limit 4
 uv run evalora run --config evalora.yaml --tests test_set.jsonl --run-name demo
 uv run evalora report --run demo --out report.html
+uv run evalora export-labels --run demo --out labels.html
+uv run evalora validate-judge --labels labels.jsonl --dataset manual
 ```
 
 `generate` reads the documents under `docs.paths` and writes the JSONL test set
@@ -85,6 +94,12 @@ retrieval-only run that makes no LLM calls.
 `report` reads stored results and writes one self-contained HTML file. It
 supports `--baseline <run-name>` for a metric diff and pass-to-fail flips. It
 never calls an LLM.
+
+`export-labels` builds a self-contained HTML page for hand-labelling the claims
+from a judged run. `validate-judge` runs the judge on those labels and reports
+agreement; it needs `GEMINI_API_KEY`. The public RAGTruth workflow and the
+hand-labelled-set procedure are documented in
+[`docs/JUDGE_VALIDATION.md`](./docs/JUDGE_VALIDATION.md).
 
 ## API keys
 
@@ -135,6 +150,10 @@ src/evalora/
   report/
     builder.py    self-contained HTML report
     templates/report.html.j2
+  validate/
+    labels.py     label file IO and HTML labelling sheet
+    judge_eval.py agreement metrics and validation runs
+    ragtruth.py   RAGTruth loader and seeded sampler
   store/
     db.py         runs, results and baselines in SQLite
   llm/
@@ -150,6 +169,7 @@ tests/
 docs/
   DECISIONS.md
   ADAPTER_CONTRACT.md
+  JUDGE_VALIDATION.md
 ```
 
 ## License

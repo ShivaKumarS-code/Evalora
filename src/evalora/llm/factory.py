@@ -13,7 +13,7 @@ def build_llm_client(
     model: str,
     no_cache: bool = False,
     max_concurrency: int = 4,
-    requests_per_minute: int = 60,
+    requests_per_minute: int = 15,
 ) -> LLMClient:
     provider = GeminiProvider(model=model)
     cache = None if no_cache else ResponseCache()
@@ -21,4 +21,11 @@ def build_llm_client(
         max_concurrency=max_concurrency,
         requests_per_minute=requests_per_minute,
     )
-    return LLMClient(provider, cache=cache, limiter=limiter)
+    return LLMClient(
+        provider,
+        cache=cache,
+        limiter=limiter,
+        max_retries=5,
+        base_delay=2.0,
+        max_delay=60.0,
+    )

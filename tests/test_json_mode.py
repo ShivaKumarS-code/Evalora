@@ -54,6 +54,22 @@ async def test_complete_json_with_usage_returns_responses() -> None:
     assert responses[0].usage.total_tokens > 0
 
 
+async def test_complete_json_includes_the_schema_in_the_prompt() -> None:
+    provider = FakeProvider(['{"answer": "yes", "confidence": 2}'])
+    client = LLMClient(provider)
+
+    await complete_json(
+        client,
+        [Message(role=Role.USER, content="prompt")],
+        StructuredAnswer,
+    )
+
+    schema_message = provider.calls[0][0].content
+    assert "Return only valid JSON matching this schema" in schema_message
+    assert '"confidence"' in schema_message
+    assert '"required"' in schema_message
+
+
 async def test_fenced_json_is_accepted() -> None:
     provider = FakeProvider(['```json\n{"answer": "yes", "confidence": 2}\n```'])
     client = LLMClient(provider)

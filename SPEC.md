@@ -176,7 +176,7 @@ docs:
   chunk_overlap: 100
 generation:
   provider: gemini
-  model: gemini-2.0-flash
+  model: gemini-3.5-flash-lite
   cases_per_type: {single_hop: 30, multi_hop: 15, unanswerable: 15, adversarial: 15}
   seed: 42
 pipeline:
@@ -187,7 +187,7 @@ pipeline:
   response_mapping: {answer: "answer", contexts: "contexts"}
 judge:
   provider: gemini
-  model: gemini-2.0-flash
+  model: gemini-3.5-flash-lite
   temperature: 0
 gate:
   baseline: main

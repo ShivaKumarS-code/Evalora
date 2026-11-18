@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from evalora.evaluate.aggregate import MetricSummary, RunAggregate
 from evalora.schemas import CaseResult, FailureCategory, QuestionType
 from evalora.store.db import RunRecord
+from evalora.validate.judge_eval import JudgeValidationSummary
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
 
@@ -94,6 +95,7 @@ def build_html_report(
     aggregate: RunAggregate,
     out: Path,
     baseline: BaselineComparison | None = None,
+    judge_validation: JudgeValidationSummary | None = None,
 ) -> Path:
     environment = Environment(
         loader=FileSystemLoader(_TEMPLATE_DIR),
@@ -119,6 +121,7 @@ def build_html_report(
         results=results,
         aggregate=aggregate,
         baseline=baseline,
+        judge_validation=judge_validation,
         metric_cards=metric_cards,
         type_rows=type_rows,
         failure_rows=failure_rows,

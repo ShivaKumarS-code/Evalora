@@ -125,7 +125,7 @@ def _make_config(
             },
             "generation": {
                 "provider": "gemini",
-                "model": "gemini-2.0-flash",
+                "model": "gemini-3.5-flash-lite",
                 "cases_per_type": {
                     question_type.value: count for question_type, count in counts.items()
                 },

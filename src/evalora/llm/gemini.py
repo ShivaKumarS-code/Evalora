@@ -22,7 +22,7 @@ from evalora.llm.base import (
 from evalora.llm.costs import make_usage
 
 DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com"
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 
 
 class GeminiProvider:

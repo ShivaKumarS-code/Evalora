@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from typing import TypeVar
 
@@ -10,6 +11,8 @@ from pydantic import BaseModel
 from evalora.llm.base import LLMClient, LLMResponse, Message, Role, StructuredOutputError
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
+
+SCHEMA_PROMPT = "Return only valid JSON matching this schema:\n{schema}"
 
 REPAIR_PROMPT = (
     "The previous response could not be parsed as valid JSON matching the required schema.\n"
@@ -50,7 +53,14 @@ async def complete_json_with_usage(
 ) -> tuple[ModelT, list[LLMResponse]]:
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
-    conversation = list(messages)
+    schema_text = json.dumps(schema.model_json_schema(), indent=2, sort_keys=True)
+    conversation = [
+        Message(
+            role=Role.SYSTEM,
+            content=SCHEMA_PROMPT.format(schema=schema_text),
+        ),
+        *messages,
+    ]
     responses: list[LLMResponse] = []
     last_error = ""
     for _ in range(max_attempts):

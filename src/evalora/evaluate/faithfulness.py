@@ -6,7 +6,11 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel, Field
 
-from evalora.evaluate.prompts import CLAIM_EXTRACTION_PROMPT, CLAIM_VERIFICATION_PROMPT
+from evalora.evaluate.prompts import (
+    CLAIM_EXTRACTION_PROMPT,
+    CLAIM_VERIFICATION_PROMPT,
+    JudgePrompt,
+)
 from evalora.llm.base import LLMClient, Message, Role
 from evalora.llm.costs import TokenUsage
 from evalora.llm.json_mode import complete_json_with_usage
@@ -56,12 +60,14 @@ async def verify_claim(
     client: LLMClient,
     claim: str,
     contexts: Sequence[RetrievedContext],
+    *,
+    prompt: JudgePrompt = CLAIM_VERIFICATION_PROMPT,
 ) -> tuple[ClaimVerdict, list[TokenUsage]]:
     messages = [
-        Message(role=Role.SYSTEM, content=CLAIM_VERIFICATION_PROMPT.system),
+        Message(role=Role.SYSTEM, content=prompt.system),
         Message(
             role=Role.USER,
-            content=CLAIM_VERIFICATION_PROMPT.user.format(
+            content=prompt.user.format(
                 claim=claim,
                 contexts=_context_block(contexts),
             ),
@@ -90,6 +96,8 @@ async def judge_faithfulness(
     client: LLMClient,
     answer: str,
     contexts: Sequence[RetrievedContext],
+    *,
+    verification_prompt: JudgePrompt = CLAIM_VERIFICATION_PROMPT,
 ) -> FaithfulnessResult:
     if not answer.strip():
         return FaithfulnessResult(faithfulness=None, claim_verdicts=[])
@@ -104,7 +112,12 @@ async def judge_faithfulness(
 
     verdicts: list[ClaimVerdict] = []
     for claim in claims:
-        verdict, verification_usages = await verify_claim(client, claim, contexts)
+        verdict, verification_usages = await verify_claim(
+            client,
+            claim,
+            contexts,
+            prompt=verification_prompt,
+        )
         verdicts.append(verdict)
         usages.extend(verification_usages)
 

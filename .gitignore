@@ -15,6 +15,9 @@ htmlcov/
 *.sqlite3
 .env
 
+# Local datasets and generated label sheets are not published
+data/
+
 # Local-only demo app and its integration tests, not part of the published repo
 examples/
 tests/test_toy_rag.py

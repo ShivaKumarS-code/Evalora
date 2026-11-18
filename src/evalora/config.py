@@ -38,7 +38,7 @@ def _default_cases_per_type() -> dict[QuestionType, int]:
 
 class GenerationConfig(BaseModel):
     provider: Literal["gemini"] = "gemini"
-    model: str = "gemini-2.0-flash"
+    model: str = "gemini-3.5-flash-lite"
     cases_per_type: dict[QuestionType, int] = Field(default_factory=_default_cases_per_type)
     seed: int = 42
 
@@ -71,7 +71,7 @@ class PipelineConfig(BaseModel):
 
 class JudgeConfig(BaseModel):
     provider: Literal["gemini"] = "gemini"
-    model: str = "gemini-2.0-flash"
+    model: str = "gemini-3.5-flash-lite"
     temperature: float = 0.0
 
 
@@ -110,7 +110,7 @@ docs:
 
 generation:
   provider: gemini
-  model: gemini-2.0-flash
+  model: gemini-3.5-flash-lite
   cases_per_type:
     single_hop: 30
     multi_hop: 15
@@ -130,7 +130,7 @@ pipeline:
 
 judge:
   provider: gemini
-  model: gemini-2.0-flash
+  model: gemini-3.5-flash-lite
   temperature: 0
 
 gate:

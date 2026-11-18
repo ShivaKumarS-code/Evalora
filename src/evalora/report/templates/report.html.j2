@@ -202,6 +202,57 @@
     </table>
   </section>
 
+  {% if judge_validation %}
+  <section>
+    <h2>Judge validation</h2>
+    <p class="meta">
+      {{ judge_validation.dataset }}
+      &middot; {{ judge_validation.model }}
+      &middot; prompt {{ judge_validation.prompt_version }}
+      &middot; n={{ judge_validation.n }}
+      {% if judge_validation.sample_seed is not none %}
+      &middot; sample seed {{ judge_validation.sample_seed }}
+      {% endif %}
+      &middot; {{ (judge_validation.ci_confidence * 100)|int }}% CI
+      &middot; {{ judge_validation.bootstrap_resamples }} resamples
+    </p>
+    <div class="cards">
+      {% for label, metric in [
+        ("Precision", judge_validation.precision),
+        ("Recall", judge_validation.recall),
+        ("F1", judge_validation.f1),
+        ("Accuracy", judge_validation.accuracy),
+        ("Cohen's kappa", judge_validation.kappa)
+      ] %}
+      <div class="card">
+        <div class="card-label">{{ label }}</div>
+        <div class="card-value">{{ metric.value|fmt }}</div>
+        <div class="card-sub">
+          {% if metric.ci_low is not none %}CI {{ metric.ci_low|fmt }} - {{ metric.ci_high|fmt }}{% else %}no CI{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <table>
+      <thead>
+        <tr><th>Confusion matrix</th><th>Predicted unsupported</th><th>Predicted supported</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Actually unsupported</td>
+          <td class="num">{{ judge_validation.confusion.tp }}</td>
+          <td class="num">{{ judge_validation.confusion.fn }}</td>
+        </tr>
+        <tr>
+          <td>Actually supported</td>
+          <td class="num">{{ judge_validation.confusion.fp }}</td>
+          <td class="num">{{ judge_validation.confusion.tn }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
   {% if baseline %}
   <section>
     <h2>Baseline diff: {{ baseline.baseline_run_name }}</h2>
