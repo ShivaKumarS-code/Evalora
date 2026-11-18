@@ -421,3 +421,38 @@ builds the report and runs the gate in one step so the markdown summary and
 the exit code are captured together. The report is uploaded as an artifact,
 the summary is posted to the PR, and the job fails only after both are
 published, preserving the artifacts on a red build.
+
+## D047 Dogfooding protocol
+
+The dogfooding runs point evalora at the `toy_rag` app with its chunking
+matched to the eval config (400/50), so chunk IDs line up and retrieval
+metrics are meaningful. Four degradations were run one at a time: smaller
+chunks (120), a stale index missing a document, a weak answer prompt, and
+top-k 1. Two findings are recorded honestly rather than hidden: the weak
+prompt knob moved no metric because the extractive answers were already
+shorter than the truncation cap, and single-case regressions (stale index,
+top-k 1) pass inside the paired 95% CI by design. The experiments and their
+artifacts live under `artifacts/phase6/`; the demo "video" is a terminal
+transcript embedded in `docs/RESULTS.md`.
+
+## D048 RAGTruth validation subset and quota salvage
+
+The planned validation used the first 60 of the 250-item seed-42 sample. The
+free-tier daily quota (500 requests) was exhausted mid-run by the same day's
+dogfooding, stopping the validation at HTTP 429. Rather than report nothing,
+the salvage identified the 23 items whose extraction and verification calls
+were already cached, replayed them deterministically from the response cache
+(zero new network calls), and measured those 23. The exact subset is committed
+as `artifacts/phase6/ragtruth_prefix_labels.jsonl` so the numbers are
+reproducible; the remaining 37 items are documented as pending a quota reset
+with a ready rerun command. No partial number is presented as the full 60.
+
+## D049 Results artifacts
+
+Every metric in `docs/RESULTS.md` traces either to the dogfooding SQLite
+database or to a committed artifact under `artifacts/phase6/` (test set,
+generation report, baseline export, gate summaries per experiment, both HTML
+reports, RAGTruth subset labels and validation JSON). The database and raw
+RAGTruth files stay gitignored under `data/`; the committed artifacts are the
+reviewable record, and `docs/RESULTS.md` states which file backs which
+number.

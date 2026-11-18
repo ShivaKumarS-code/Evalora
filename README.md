@@ -228,6 +228,12 @@ The gate only fails when a drop exceeds the configured threshold and the
 bootstrap confidence interval of the paired difference excludes zero, so
 ordinary run-to-run noise does not block pull requests.
 
+## Results
+
+The dogfooding evidence — regression experiments against a deliberately broken
+pipeline, judge validation numbers, costs and runtimes, and an honest
+limitations list — lives in [`docs/RESULTS.md`](./docs/RESULTS.md).
+
 ## API keys
 
 API keys are read from environment variables only and are never accepted from

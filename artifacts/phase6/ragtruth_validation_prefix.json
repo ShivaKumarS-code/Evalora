@@ -1,0 +1,190 @@
+{
+  "n": 23,
+  "confusion": {
+    "tp": 5,
+    "fp": 3,
+    "tn": 13,
+    "fn": 2
+  },
+  "precision": {
+    "value": 0.625,
+    "ci_low": 0.25,
+    "ci_high": 1.0
+  },
+  "recall": {
+    "value": 0.7142857142857143,
+    "ci_low": 0.3333333333333333,
+    "ci_high": 1.0
+  },
+  "f1": {
+    "value": 0.6666666666666666,
+    "ci_low": 0.3333333333333333,
+    "ci_high": 0.9090909090909091
+  },
+  "accuracy": {
+    "value": 0.782608695652174,
+    "ci_low": 0.6086956521739131,
+    "ci_high": 0.9565217391304348
+  },
+  "kappa": {
+    "value": 0.5064377682403434,
+    "ci_low": 0.1067236161896358,
+    "ci_high": 0.8622754491017964
+  },
+  "model": "gemini-3.5-flash-lite",
+  "prompt_version": "v1",
+  "dataset": "RAGTruth",
+  "sample_seed": 42,
+  "sample_size": 250,
+  "ci_confidence": 0.95,
+  "bootstrap_resamples": 1000,
+  "bootstrap_seed": 42,
+  "token_usage": {
+    "calls": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cost_usd": 0.0
+  },
+  "created_at": "2026-11-18T12:04:54.604113+00:00",
+  "items": [
+    {
+      "item_id": "ragtruth:26",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:55",
+      "true_label": "supported",
+      "predicted_label": "unsupported",
+      "correct": false
+    },
+    {
+      "item_id": "ragtruth:122",
+      "true_label": "unsupported",
+      "predicted_label": "supported",
+      "correct": false
+    },
+    {
+      "item_id": "ragtruth:125",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:185",
+      "true_label": "unsupported",
+      "predicted_label": "unsupported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:331",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:721",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:726",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:837",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:857",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:883",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:1052",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:1054",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:1480",
+      "true_label": "supported",
+      "predicted_label": "unsupported",
+      "correct": false
+    },
+    {
+      "item_id": "ragtruth:1598",
+      "true_label": "unsupported",
+      "predicted_label": "unsupported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:1681",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:1746",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:1751",
+      "true_label": "supported",
+      "predicted_label": "supported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:2121",
+      "true_label": "unsupported",
+      "predicted_label": "unsupported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:2169",
+      "true_label": "supported",
+      "predicted_label": "unsupported",
+      "correct": false
+    },
+    {
+      "item_id": "ragtruth:2171",
+      "true_label": "unsupported",
+      "predicted_label": "unsupported",
+      "correct": true
+    },
+    {
+      "item_id": "ragtruth:2246",
+      "true_label": "unsupported",
+      "predicted_label": "supported",
+      "correct": false
+    },
+    {
+      "item_id": "ragtruth:2655",
+      "true_label": "unsupported",
+      "predicted_label": "unsupported",
+      "correct": true
+    }
+  ]
+}

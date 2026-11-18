@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evalora report - exp-chunks</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --text: #1f2933;
+      --muted: #667085;
+      --border: #d9dee7;
+      --accent: #2f5d8a;
+      --pass: #1f7a4d;
+      --fail: #b42318;
+      --warn: #92400e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+    }
+    header h1 { margin: 0 0 8px; font-size: 24px; }
+    header .meta { color: var(--muted); font-size: 13px; }
+    main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+    section { margin-bottom: 28px; }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .card-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .card-value { font-size: 28px; font-weight: 650; margin-top: 4px; }
+    .card-sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    th { background: #eef1f5; color: #344054; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+    tr:last-child td { border-bottom: 0; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .totals { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .filters select, .filters input {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .filters input { min-width: 260px; flex: 1; }
+    .case {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .case-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .case-head h3 { margin: 0; font-size: 16px; }
+    .case-meta { color: var(--muted); font-size: 12px; margin: 4px 0 12px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .badge.pass { background: #e7f4ec; color: var(--pass); }
+    .badge.failure { background: #fde8e7; color: var(--fail); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .field { margin-top: 10px; }
+    .field-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 3px; }
+    .answer, .context, .error {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .error { background: #fef3f2; border-color: #fecdca; color: var(--fail); }
+    .context { margin-bottom: 8px; }
+    .ctx-id { color: var(--muted); font-size: 12px; }
+    .claims { list-style: none; padding: 0; margin: 0; }
+    .claim {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--pass);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+    }
+    .claim.unsupported { border-left-color: var(--fail); background: #fef3f2; }
+    .claim .rationale { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .claim .evidence { color: var(--muted); font-size: 12px; margin-left: 6px; }
+    .muted { color: var(--muted); }
+    .scores { color: var(--muted); font-size: 12px; margin-top: 10px; }
+    .flipped { margin-top: 12px; }
+    details.config { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+    details.config pre { overflow: auto; max-height: 380px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Evalora report: exp-chunks</h1>
+  <div class="meta">
+    Created 2026-11-18 11:17 UTC
+    &middot; cases 15/15
+    &middot; test set <code>62cc3988933d</code>
+    &middot; commit <code>07c88a6844db</code>
+  </div>
+</header>
+<main>
+  <section>
+    <h2>Summary</h2>
+    <div class="cards">
+      
+      <div class="card">
+        <div class="card-label">Faithfulness</div>
+        <div class="card-value">1.000</div>
+        <div class="card-sub">
+          n=11
+          &middot; 95% CI 1.000 - 1.000
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-label">Correctness</div>
+        <div class="card-value">0.333</div>
+        <div class="card-sub">
+          n=12
+          &middot; 95% CI 0.083 - 0.583
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-label">Hit rate</div>
+        <div class="card-value">0.000</div>
+        <div class="card-sub">
+          n=12
+          &middot; 95% CI 0.000 - 0.000
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-label">MRR</div>
+        <div class="card-value">0.000</div>
+        <div class="card-sub">
+          n=12
+          &middot; 95% CI 0.000 - 0.000
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-label">Context recall</div>
+        <div class="card-value">0.000</div>
+        <div class="card-sub">
+          n=12
+          &middot; 95% CI 0.000 - 0.000
+        </div>
+      </div>
+      
+    </div>
+    <div class="totals">
+      Latency p50 14.725 ms &middot; p95 47.038 ms
+      &middot; judge calls 21
+      &middot; tokens 7531
+      &middot; estimated cost $0.000000
+    </div>
+  </section>
+
+  <section>
+    <h2>By question type</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th><th>Cases</th><th>Faithfulness</th><th>Correctness</th>
+          <th>Hit rate</th><th>MRR</th><th>Context recall</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>single_hop</td>
+          <td class="num">6</td>
+          <td class="num">1.000</td>
+          <td class="num">0.333</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+        </tr>
+        
+        <tr>
+          <td>multi_hop</td>
+          <td class="num">3</td>
+          <td class="num">1.000</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+        </tr>
+        
+        <tr>
+          <td>unanswerable</td>
+          <td class="num">3</td>
+          <td class="num">1.000</td>
+          <td class="num">n/a</td>
+          <td class="num">n/a</td>
+          <td class="num">n/a</td>
+          <td class="num">n/a</td>
+        </tr>
+        
+        <tr>
+          <td>adversarial</td>
+          <td class="num">3</td>
+          <td class="num">1.000</td>
+          <td class="num">0.667</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+          <td class="num">0.000</td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Failure categories</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Count</th></tr></thead>
+      <tbody>
+        
+        <tr><td>retrieval_failure</td><td class="num">8</td></tr>
+        
+        <tr><td>generation_failure</td><td class="num">0</td></tr>
+        
+        <tr><td>hallucination</td><td class="num">0</td></tr>
+        
+        <tr><td>failed_abstention</td><td class="num">2</td></tr>
+        
+        <tr><td>wrong_abstention</td><td class="num">0</td></tr>
+        
+        <tr><td>pipeline_error</td><td class="num">0</td></tr>
+        
+      </tbody>
+    </table>
+  </section>
+
+  
+
+  
+  <section>
+    <h2>Baseline diff: healthy-baseline</h2>
+    <table>
+      <thead><tr><th>Metric</th><th>Current</th><th>Baseline</th><th>Delta</th></tr></thead>
+      <tbody>
+        
+        <tr>
+          <td>Faithfulness</td>
+          <td class="num">1.000</td>
+          <td class="num">1.000</td>
+          <td class="num">+0.000</td>
+        </tr>
+        
+        <tr>
+          <td>Correctness</td>
+          <td class="num">0.333</td>
+          <td class="num">0.333</td>
+          <td class="num">+0.000</td>
+        </tr>
+        
+        <tr>
+          <td>Hit rate</td>
+          <td class="num">0.000</td>
+          <td class="num">1.000</td>
+          <td class="num">-1.000</td>
+        </tr>
+        
+        <tr>
+          <td>MRR</td>
+          <td class="num">0.000</td>
+          <td class="num">1.000</td>
+          <td class="num">-1.000</td>
+        </tr>
+        
+        <tr>
+          <td>Context recall</td>
+          <td class="num">0.000</td>
+          <td class="num">1.000</td>
+          <td class="num">-1.000</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    <div class="flipped">
+      <h3>Cases flipped from pass to fail</h3>
+      
+      <p class="muted">No cases flipped from pass to fail.</p>
+      
+    </div>
+  </section>
+  
+
+  <section>
+    <h2>Cases</h2>
+    <div class="filters">
+      <select id="type-filter" aria-label="Filter by question type">
+        <option value="all">All types</option>
+        
+        <option value="single_hop">single_hop</option>
+        
+        <option value="multi_hop">multi_hop</option>
+        
+        <option value="unanswerable">unanswerable</option>
+        
+        <option value="adversarial">adversarial</option>
+        
+      </select>
+      <select id="failure-filter" aria-label="Filter by failure category">
+        <option value="all">All outcomes</option>
+        <option value="none">pass</option>
+        
+        <option value="retrieval_failure">retrieval_failure</option>
+        
+        <option value="generation_failure">generation_failure</option>
+        
+        <option value="hallucination">hallucination</option>
+        
+        <option value="failed_abstention">failed_abstention</option>
+        
+        <option value="wrong_abstention">wrong_abstention</option>
+        
+        <option value="pipeline_error">pipeline_error</option>
+        
+      </select>
+      <input id="search" type="search" placeholder="Search questions..." aria-label="Search questions">
+    </div>
+
+    
+    <article class="case"
+      data-type="single_hop"
+      data-failure="none"
+      data-question="how much does techclub membership cost?">
+      <div class="case-head">
+        <div>
+          <h3>How much does TechClub membership cost?</h3>
+          <div class="case-meta">
+            <code>15aa4b5ee7d8</code> &middot; single_hop
+            &middot; latency 8.695 ms
+          </div>
+        </div>
+        
+        <span class="badge pass">pass</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">49 dollars per year</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># TechClub membership
+
+TechClub costs 49 dollars per year.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechClub costs 49 dollars per year.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechClub costs 49 dollars per year.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: f66028d7db5f</div>
+            <div>ount on accessories. Members get early access to sale events. Membership can be cancelled at any time.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: correct
+        (true)
+        &middot; abstained: False
+        &middot; judge tokens: 411
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="single_hop"
+      data-failure="retrieval_failure"
+      data-question="how long does express shipping take?">
+      <div class="case-head">
+        <div>
+          <h3>How long does express shipping take?</h3>
+          <div class="case-meta">
+            <code>4edf3d8dc7fe</code> &middot; single_hop
+            &middot; latency 92.603 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">2 business days</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># Shipping
+
+Standard shipping takes 5 to 7 business days.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            Standard shipping takes 5 to 7 business days.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that standard shipping takes 5 to 7 business days.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: ff5e89c8ed23</div>
+            <div># Shipping
+
+Standard shipping takes 5 to 7 business days. Express shipping takes 2 business days.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: c64308271f98</div>
+            <div>kes 2 business days. Orders over 50 dollars ship free with standard shipping. TechMart does not ship to PO boxes.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 393
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="single_hop"
+      data-failure="retrieval_failure"
+      data-question="what is the phone number for customer support?">
+      <div class="case-head">
+        <div>
+          <h3>What is the phone number for customer support?</h3>
+          <div class="case-meta">
+            <code>a3b89c5c5924</code> &middot; single_hop
+            &middot; latency 23.427 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">555-0142</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># Customer support
+
+Support is available from 8 am to 8 pm Pacific time.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            Customer support is available from 8 am to 8 pm Pacific time.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that support is available from 8 am to 8 pm Pacific time.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 8cccc90604b4</div>
+            <div># Customer support
+
+Support is available from 8 am to 8 pm Pacific time. The support phone number is 555-0142.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: a2a7c9d92297</div>
+            <div>number is 555-0142. Repair service is offered at the Portland flagship store.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 7c9c8f66e996</div>
+            <div>land flagship store. Email support responses usually arrive within one business day.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 425
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="single_hop"
+      data-failure="retrieval_failure"
+      data-question="what is the return window for techclub members at techmart?">
+      <div class="case-head">
+        <div>
+          <h3>What is the return window for TechClub members at TechMart?</h3>
+          <div class="case-meta">
+            <code>2162ea29fdab</code> &middot; single_hop
+            &middot; latency 14.908 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">45 days</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">hase with a receipt.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness n/a)</div>
+        
+        <p class="muted">No factual claims extracted.</p>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: bbc8a2f7b089</div>
+            <div>hase with a receipt. TechClub members receive a 45-day return window. Opened software and gift cards are not returnable.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 495
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="single_hop"
+      data-failure="retrieval_failure"
+      data-question="to how many months can techclub members extend their electronics warranty coverage?">
+      <div class="case-head">
+        <div>
+          <h3>To how many months can TechClub members extend their electronics warranty coverage?</h3>
+          <div class="case-meta">
+            <code>ae03b4a68e93</code> &middot; single_hop
+            &middot; latency 16.434 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">24 months</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">nufacturer warranty.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness n/a)</div>
+        
+        <p class="muted">No factual claims extracted.</p>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 4980b316d542</div>
+            <div># Warranty
+
+Most electronics include a 12-month manufacturer warranty.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: bfb2f9059e37</div>
+            <div>verage to 24 months. Accidental damage is not covered by the standard warranty.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 495
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="single_hop"
+      data-failure="none"
+      data-question="in what year was techmart founded?">
+      <div class="case-head">
+        <div>
+          <h3>In what year was TechMart founded?</h3>
+          <div class="case-meta">
+            <code>5b871ab5c045</code> &middot; single_hop
+            &middot; latency 27.511 ms
+          </div>
+        </div>
+        
+        <span class="badge pass">pass</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">1994</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># TechMart history
+
+TechMart was founded in 1994 in Portland, Oregon, by Elena Park.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechMart was founded in 1994.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechMart was founded in 1994.</span>
+          </li>
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechMart was founded in Portland, Oregon.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechMart was founded in Portland, Oregon.</span>
+          </li>
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechMart was founded by Elena Park.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechMart was founded by Elena Park.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 741497ccfd41</div>
+            <div># TechMart history
+
+TechMart was founded in 1994 in Portland, Oregon, by Elena Park.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: a3a81d526c5f</div>
+            <div># Returns policy
+
+TechMart accepts returns within 30 days of purchase with a receipt.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: correct
+        (true)
+        &middot; abstained: False
+        &middot; judge tokens: 1243
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="multi_hop"
+      data-failure="retrieval_failure"
+      data-question="what is the standard shipping duration and the standard return window for techmart?">
+      <div class="case-head">
+        <div>
+          <h3>What is the standard shipping duration and the standard return window for TechMart?</h3>
+          <div class="case-meta">
+            <code>30182fc6aa66</code> &middot; multi_hop
+            &middot; latency 13.077 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">Standard shipping takes 5 to 7 business days, and returns are accepted within 30 days of purchase with a receipt.</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># Shipping
+
+Standard shipping takes 5 to 7 business days.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            Standard shipping takes 5 to 7 business days.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that &#39;Standard shipping takes 5 to 7 business days.&#39;</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: ff5e89c8ed23</div>
+            <div># Shipping
+
+Standard shipping takes 5 to 7 business days. Express shipping takes 2 business days.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: c64308271f98</div>
+            <div>kes 2 business days. Orders over 50 dollars ship free with standard shipping. TechMart does not ship to PO boxes.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: bbc8a2f7b089</div>
+            <div>hase with a receipt. TechClub members receive a 45-day return window. Opened software and gift cards are not returnable.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: partially_correct
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 428
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="multi_hop"
+      data-failure="retrieval_failure"
+      data-question="in what year was the company that allows techclub members a 45-day return window originally founded?">
+      <div class="case-head">
+        <div>
+          <h3>In what year was the company that allows TechClub members a 45-day return window originally founded?</h3>
+          <div class="case-meta">
+            <code>b0fdfd0ece4e</code> &middot; multi_hop
+            &middot; latency 16.095 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">1994</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">hase with a receipt.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness n/a)</div>
+        
+        <p class="muted">No factual claims extracted.</p>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: bbc8a2f7b089</div>
+            <div>hase with a receipt. TechClub members receive a 45-day return window. Opened software and gift cards are not returnable.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 327
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="multi_hop"
+      data-failure="retrieval_failure"
+      data-question="at which specific techmart location is repair service offered?">
+      <div class="case-head">
+        <div>
+          <h3>At which specific TechMart location is repair service offered?</h3>
+          <div class="case-meta">
+            <code>f629211eb9a7</code> &middot; multi_hop
+            &middot; latency 14.061 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">The Portland flagship store</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">number is 555-0142.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            The number is 555-0142.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that the number is 555-0142.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: a2a7c9d92297</div>
+            <div>number is 555-0142. Repair service is offered at the Portland flagship store.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 741497ccfd41</div>
+            <div># TechMart history
+
+TechMart was founded in 1994 in Portland, Oregon, by Elena Park.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: a3a81d526c5f</div>
+            <div># Returns policy
+
+TechMart accepts returns within 30 days of purchase with a receipt.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 956
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="unanswerable"
+      data-failure="none"
+      data-question="how many techclub members are currently enrolled worldwide?">
+      <div class="case-head">
+        <div>
+          <h3>How many TechClub members are currently enrolled worldwide?</h3>
+          <div class="case-meta">
+            <code>e17b9d94ba21</code> &middot; unanswerable
+            &middot; latency 14.555 ms
+          </div>
+        </div>
+        
+        <span class="badge pass">pass</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">n/a</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">nufacturer warranty.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness n/a)</div>
+        
+        <p class="muted">No factual claims extracted.</p>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: bbc8a2f7b089</div>
+            <div>hase with a receipt. TechClub members receive a 45-day return window. Opened software and gift cards are not returnable.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        (not applicable)
+        &middot; correctness: n/a
+        
+        &middot; abstained: False
+        &middot; judge tokens: 0
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="unanswerable"
+      data-failure="failed_abstention"
+      data-question="what is the lifetime membership option cost for techclub?">
+      <div class="case-head">
+        <div>
+          <h3>What is the lifetime membership option cost for TechClub?</h3>
+          <div class="case-meta">
+            <code>d642f123e3fc</code> &middot; unanswerable
+            &middot; latency 15.651 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">failed_abstention</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">n/a</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># TechClub membership
+
+TechClub costs 49 dollars per year.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechClub costs 49 dollars per year.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechClub costs 49 dollars per year.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: f66028d7db5f</div>
+            <div>ount on accessories. Members get early access to sale events. Membership can be cancelled at any time.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        (not applicable)
+        &middot; correctness: n/a
+        
+        &middot; abstained: False
+        &middot; judge tokens: 0
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="adversarial"
+      data-failure="none"
+      data-question="what is the annual cost of a techclub membership?">
+      <div class="case-head">
+        <div>
+          <h3>What is the annual cost of a TechClub membership?</h3>
+          <div class="case-meta">
+            <code>d19ee894c23d</code> &middot; adversarial
+            &middot; latency 12.321 ms
+          </div>
+        </div>
+        
+        <span class="badge pass">pass</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">49 dollars</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># TechClub membership
+
+TechClub costs 49 dollars per year.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechClub costs 49 dollars per year.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechClub costs 49 dollars per year.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 4655d17ad948</div>
+            <div># TechClub membership
+
+TechClub costs 49 dollars per year. Members receive a 10 percent discount on accessories.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: 39e0bdd19ff9</div>
+            <div>nufacturer warranty. TechClub members can extend coverage to 24 months.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: f66028d7db5f</div>
+            <div>ount on accessories. Members get early access to sale events. Membership can be cancelled at any time.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: correct
+        (true)
+        &middot; abstained: False
+        &middot; judge tokens: 0
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="adversarial"
+      data-failure="none"
+      data-question="how many business days does standard shipping take for techmart?">
+      <div class="case-head">
+        <div>
+          <h3>How many business days does standard shipping take for TechMart?</h3>
+          <div class="case-meta">
+            <code>98c6cb227cfa</code> &middot; adversarial
+            &middot; latency 14.656 ms
+          </div>
+        </div>
+        
+        <span class="badge pass">pass</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">5 to 7 business days</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># Shipping
+
+Standard shipping takes 5 to 7 business days.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            Standard shipping takes 5 to 7 business days.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that standard shipping takes 5 to 7 business days.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: ff5e89c8ed23</div>
+            <div># Shipping
+
+Standard shipping takes 5 to 7 business days. Express shipping takes 2 business days.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: c64308271f98</div>
+            <div>kes 2 business days. Orders over 50 dollars ship free with standard shipping. TechMart does not ship to PO boxes.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: a3a81d526c5f</div>
+            <div># Returns policy
+
+TechMart accepts returns within 30 days of purchase with a receipt.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: correct
+        (true)
+        &middot; abstained: False
+        &middot; judge tokens: 417
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="unanswerable"
+      data-failure="failed_abstention"
+      data-question="what is the annual revenue of techmart?">
+      <div class="case-head">
+        <div>
+          <h3>What is the annual revenue of TechMart?</h3>
+          <div class="case-meta">
+            <code>d7fe379edab9</code> &middot; unanswerable
+            &middot; latency 14.725 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">failed_abstention</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">n/a</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer"># TechMart history
+
+TechMart was founded in 1994 in Portland, Oregon, by Elena Park.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechMart was founded in 1994.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechMart was founded in 1994.</span>
+          </li>
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechMart was founded in Portland, Oregon.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechMart was founded in Portland, Oregon in 1994.</span>
+          </li>
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            TechMart was founded by Elena Park.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">Context [0] explicitly states that TechMart was founded by Elena Park.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: 741497ccfd41</div>
+            <div># TechMart history
+
+TechMart was founded in 1994 in Portland, Oregon, by Elena Park.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: a3a81d526c5f</div>
+            <div># Returns policy
+
+TechMart accepts returns within 30 days of purchase with a receipt.</div>
+          </div>
+          
+          <div class="context">
+            <div class="ctx-id">id: c64308271f98</div>
+            <div>kes 2 business days. Orders over 50 dollars ship free with standard shipping. TechMart does not ship to PO boxes.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        (not applicable)
+        &middot; correctness: n/a
+        
+        &middot; abstained: False
+        &middot; judge tokens: 1253
+      </div>
+    </article>
+    
+    <article class="case"
+      data-type="adversarial"
+      data-failure="retrieval_failure"
+      data-question="where is repair service offered for customers?">
+      <div class="case-head">
+        <div>
+          <h3>Where is repair service offered for customers?</h3>
+          <div class="case-meta">
+            <code>c7d663b5a498</code> &middot; adversarial
+            &middot; latency 12.657 ms
+          </div>
+        </div>
+        
+        <span class="badge failure">retrieval_failure</span>
+        
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="field-label">Gold answer</div>
+          <div class="answer">Portland flagship store</div>
+        </div>
+        <div>
+          <div class="field-label">Answer</div>
+          <div class="answer">number is 555-0142.</div>
+        </div>
+      </div>
+
+      
+
+      <div class="field">
+        <div class="field-label">Claim verdicts (faithfulness 1.000)</div>
+        
+        <ul class="claims">
+          
+          <li class="claim supported">
+            <strong>supported</strong>
+            The number is 555-0142.
+            
+            <span class="evidence">evidence: context 0</span>
+            
+            <span class="rationale">The context explicitly states that the number is 555-0142.</span>
+          </li>
+          
+        </ul>
+        
+      </div>
+
+      <div class="field">
+        <div class="field-label">Retrieved contexts</div>
+        
+          
+          <div class="context">
+            <div class="ctx-id">id: a2a7c9d92297</div>
+            <div>number is 555-0142. Repair service is offered at the Portland flagship store.</div>
+          </div>
+          
+        
+      </div>
+
+      <div class="scores">
+        retrieval: hit=False, MRR=0.000,
+        recall=0.000
+        
+        &middot; correctness: incorrect
+        (false)
+        &middot; abstained: False
+        &middot; judge tokens: 688
+      </div>
+    </article>
+    
+  </section>
+
+  <section>
+    <details class="config">
+      <summary>Config snapshot</summary>
+      <pre>{
+  &#34;docs&#34;: {
+    &#34;chunk_overlap&#34;: 50,
+    &#34;chunk_size&#34;: 400,
+    &#34;paths&#34;: [
+      &#34;examples\\toy_rag\\docs&#34;
+    ]
+  },
+  &#34;gate&#34;: {
+    &#34;baseline&#34;: &#34;main&#34;,
+    &#34;ci_confidence&#34;: 0.95,
+    &#34;thresholds&#34;: {
+      &#34;context_recall&#34;: {
+        &#34;max_drop&#34;: 0.05,
+        &#34;min_absolute&#34;: null
+      },
+      &#34;correctness&#34;: {
+        &#34;max_drop&#34;: 0.05,
+        &#34;min_absolute&#34;: null
+      },
+      &#34;faithfulness&#34;: {
+        &#34;max_drop&#34;: 0.05,
+        &#34;min_absolute&#34;: null
+      }
+    }
+  },
+  &#34;generation&#34;: {
+    &#34;cases_per_type&#34;: {
+      &#34;adversarial&#34;: 3,
+      &#34;multi_hop&#34;: 3,
+      &#34;single_hop&#34;: 6,
+      &#34;unanswerable&#34;: 3
+    },
+    &#34;model&#34;: &#34;gemini-3.5-flash-lite&#34;,
+    &#34;provider&#34;: &#34;gemini&#34;,
+    &#34;seed&#34;: 42
+  },
+  &#34;judge&#34;: {
+    &#34;model&#34;: &#34;gemini-3.5-flash-lite&#34;,
+    &#34;provider&#34;: &#34;gemini&#34;,
+    &#34;temperature&#34;: 0.0
+  },
+  &#34;judge_runtime&#34;: {
+    &#34;enabled&#34;: true,
+    &#34;model&#34;: &#34;gemini-3.5-flash-lite&#34;,
+    &#34;prompt_versions&#34;: {
+      &#34;abstention&#34;: &#34;v1&#34;,
+      &#34;claim_extraction&#34;: &#34;v1&#34;,
+      &#34;claim_verification&#34;: &#34;v1&#34;,
+      &#34;claim_verification_strict&#34;: &#34;v2&#34;,
+      &#34;correctness&#34;: &#34;v1&#34;
+    }
+  },
+  &#34;pipeline&#34;: {
+    &#34;concurrency&#34;: 2,
+    &#34;endpoint&#34;: &#34;http://127.0.0.1:8000/query&#34;,
+    &#34;headers&#34;: {},
+    &#34;match_threshold&#34;: 0.8,
+    &#34;response_mapping&#34;: {
+      &#34;answer&#34;: &#34;answer&#34;,
+      &#34;contexts&#34;: &#34;contexts&#34;
+    },
+    &#34;timeout_s&#34;: 10.0
+  }
+}</pre>
+    </details>
+  </section>
+</main>
+<script>
+(function () {
+  var typeFilter = document.getElementById("type-filter");
+  var failureFilter = document.getElementById("failure-filter");
+  var search = document.getElementById("search");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".case"));
+
+  function applyFilters() {
+    var type = typeFilter.value;
+    var failure = failureFilter.value;
+    var query = search.value.trim().toLowerCase();
+    cards.forEach(function (card) {
+      var matchesType = type === "all" || card.dataset.type === type;
+      var matchesFailure = failure === "all" || card.dataset.failure === failure;
+      var matchesQuery = !query || card.dataset.question.indexOf(query) !== -1;
+      card.style.display = matchesType && matchesFailure && matchesQuery ? "" : "none";
+    });
+  }
+
+  typeFilter.addEventListener("change", applyFilters);
+  failureFilter.addEventListener("change", applyFilters);
+  search.addEventListener("input", applyFilters);
+})();
+</script>
+</body>
+</html>

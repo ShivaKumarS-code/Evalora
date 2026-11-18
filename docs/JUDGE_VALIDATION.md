@@ -68,26 +68,52 @@ evalora ragtruth-sample \
 
 ### Results
 
-`TODO: fill from real run` after
-`evalora validate-judge --labels data/ragtruth_sample.jsonl --dataset RAGTruth`
-finishes.
+Measured on 2026-11-18 with `evalora validate-judge` (judge `gemini-3.5-flash-lite`,
+prompt `claim_verification` v1, temperature 0).
+
+The planned validation set was the first 60 of the 250-item sample. The free-tier
+Gemini daily quota (500 requests per day) was exhausted partway through — the
+dogfooding runs of the same day consumed most of it — so the run stopped at
+HTTP 429. The 23 items whose extraction and verification calls had already
+completed form the measured subset; those items are committed as
+`artifacts/phase6/ragtruth_prefix_labels.jsonl` (7 unsupported, 16 supported)
+and the metrics below were computed over exactly that file.
 
 | Metric | Value | Bootstrap CI |
 | --- | --- | --- |
-| Precision (unsupported) | TODO | TODO |
-| Recall (unsupported) | TODO | TODO |
-| F1 (unsupported) | TODO | TODO |
-| Accuracy | TODO | TODO |
-| Cohen's kappa | TODO | TODO |
+| Precision (unsupported) | 0.625 | [0.250, 1.000] |
+| Recall (unsupported) | 0.714 | [0.333, 1.000] |
+| F1 (unsupported) | 0.667 | [0.333, 0.909] |
+| Accuracy | 0.783 | [0.609, 0.957] |
+| Cohen's kappa | 0.506 | [0.107, 0.862] |
 
 Confusion matrix, positive class `unsupported`:
 
 | | Predicted unsupported | Predicted supported |
 | --- | --- | --- |
-| Actually unsupported | TODO | TODO |
-| Actually supported | TODO | TODO |
+| Actually unsupported | 5 | 2 |
+| Actually supported | 3 | 13 |
 
-`TODO: fill from real run` for token usage, cost, and wall-clock time.
+Token usage for the measured run: 0 fresh calls — every judgment was served
+from the response cache, which is what made a same-day measurement possible
+after the quota cut the 60-item run short. The earlier 5-item smoke run
+(2026-11-05, also real) had reported precision/recall/F1 of 0.5 with 7 calls.
+
+The remaining 37 items of the 60-item subset are pending a quota reset; a
+rerun of the full 60 completes the already-judged 23 from cache and only pays
+for the rest:
+
+```bash
+evalora validate-judge \
+  --labels data/dogfooding/ragtruth_first60.jsonl \
+  --out artifacts/phase6/ragtruth_validation.json \
+  --dataset RAGTruth
+```
+
+With n = 23 the confidence intervals are wide; the point estimates say the
+judge is usable but imperfect: it over-flags (3 false positives) and misses
+some hallucinations (2 false negatives). Treat the numbers as an initial
+measurement, not a final characterization.
 
 ## Own hand-labelled set
 
@@ -129,10 +155,27 @@ Status: `TODO: fill from real comparison runs`. The default model remains
 
 ## Known weaknesses and error analysis
 
-`TODO: fill from real run`. This section will list the judge's characteristic
-failure modes with example items, including any missed numeric/date/entity
-swaps, over-flagging of paraphrases, and claim-extraction misses. No weaknesses
-will be invented before inspecting the real predictions.
+From the 23-item RAGTruth measurement above (each example is a stored item in
+`artifacts/phase6/ragtruth_validation_prefix.json`):
+
+- **Over-flagging summaries (3 false positives).** All three items the judge
+  wrongly marked unsupported — `ragtruth:55`, `ragtruth:1480`,
+  `ragtruth:2169` — are summary-style answers ("Here is a summary of the
+  article in 200 words or less…"). Summaries compress and paraphrase several
+  source facts into fewer sentences, and strict claim-by-claim verification
+  against the source passages tends to mark that compression as unsupported.
+  `ragtruth:55` was also flagged as a false positive in the earlier 5-item
+  smoke run, so the pattern is stable across runs.
+- **Missing subtle details (2 false negatives).** `ragtruth:2246` adds a
+  casualty count ("Three of the militants are killed") that RAGTruth
+  annotates as hallucinated, but the judge accepted it as supported;
+  `ragtruth:122` is a tabloid-style narrative whose annotated hallucination
+  the judge likewise missed. Numeric and narrative-embellishment errors are
+  the judge's weak spot.
+- **Wide uncertainty at n = 23.** The bootstrap CIs span most of the unit
+  interval. The numbers above are an initial measurement, not a final
+  characterization; the full 60-item subset and the 100–150-item hand-labelled
+  set are still pending (quota reset and manual labelling respectively).
 
 ## Operational notes
 

@@ -1,0 +1,32 @@
+{
+  "seed": 42,
+  "documents": 6,
+  "chunks": 6,
+  "requested": {
+    "single_hop": 6,
+    "multi_hop": 3,
+    "unanswerable": 3,
+    "adversarial": 3
+  },
+  "kept": {
+    "single_hop": 6,
+    "multi_hop": 3,
+    "unanswerable": 3,
+    "adversarial": 3
+  },
+  "dropped": {},
+  "token_usage": {
+    "calls": 30,
+    "prompt_tokens": 9335,
+    "completion_tokens": 1586,
+    "total_tokens": 10921,
+    "cost_usd": 0.0
+  },
+  "prompt_versions": {
+    "single_hop": "v1",
+    "multi_hop": "v1",
+    "unanswerable": "v1",
+    "adversarial": "v1",
+    "answerability": "v1"
+  }
+}

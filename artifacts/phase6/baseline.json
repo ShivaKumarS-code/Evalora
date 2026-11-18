@@ -1,0 +1,1241 @@
+{
+  "format_version": 1,
+  "run_name": "healthy-baseline",
+  "test_set_hash": "62cc3988933d85608afb866ccb7f0c14e45f9fb3c2b912d5dd7c8bd85ea1cda0",
+  "git_sha": "07c88a6844db2ddb9aa58dff81c2b3b191557cd8",
+  "config_snapshot": {
+    "docs": {
+      "chunk_overlap": 50,
+      "chunk_size": 400,
+      "paths": [
+        "examples\\toy_rag\\docs"
+      ]
+    },
+    "gate": {
+      "baseline": "main",
+      "ci_confidence": 0.95,
+      "thresholds": {
+        "context_recall": {
+          "max_drop": 0.05,
+          "min_absolute": null
+        },
+        "correctness": {
+          "max_drop": 0.05,
+          "min_absolute": null
+        },
+        "faithfulness": {
+          "max_drop": 0.05,
+          "min_absolute": null
+        }
+      }
+    },
+    "generation": {
+      "cases_per_type": {
+        "adversarial": 3,
+        "multi_hop": 3,
+        "single_hop": 6,
+        "unanswerable": 3
+      },
+      "model": "gemini-3.5-flash-lite",
+      "provider": "gemini",
+      "seed": 42
+    },
+    "judge": {
+      "model": "gemini-3.5-flash-lite",
+      "provider": "gemini",
+      "temperature": 0.0
+    },
+    "judge_runtime": {
+      "enabled": true,
+      "model": "gemini-3.5-flash-lite",
+      "prompt_versions": {
+        "abstention": "v1",
+        "claim_extraction": "v1",
+        "claim_verification": "v1",
+        "claim_verification_strict": "v2",
+        "correctness": "v1"
+      }
+    },
+    "pipeline": {
+      "concurrency": 2,
+      "endpoint": "http://127.0.0.1:8000/query",
+      "headers": {},
+      "match_threshold": 0.8,
+      "response_mapping": {
+        "answer": "answer",
+        "contexts": "contexts"
+      },
+      "timeout_s": 10.0
+    }
+  },
+  "case_count": 15,
+  "completed_count": 15,
+  "created_at": "2026-11-18T11:13:56.355886+00:00",
+  "exported_at": "2026-11-18T11:16:54.423009+00:00",
+  "results": [
+    {
+      "case": {
+        "case_id": "15aa4b5ee7d8",
+        "type": "single_hop",
+        "question": "How much does TechClub membership cost?",
+        "gold_answer": "49 dollars per year",
+        "gold_chunk_ids": [
+          "4dfe614612b9"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context states that TechClub costs 49 dollars per year.",
+          "generation_strategy": "single_chunk",
+          "gold_chunk_texts": {
+            "4dfe614612b9": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          "prompt": "single_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "4dfe614612b9"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/membership.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "TechClub costs 49 dollars per year."
+        }
+      },
+      "response": {
+        "answer": "# TechClub membership\n\nTechClub costs 49 dollars per year.",
+        "contexts": [
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          }
+        ],
+        "latency_ms": 8.125500000460306,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechClub costs 49 dollars per year.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'TechClub costs 49 dollars per year.'"
+        }
+      ],
+      "correct": true,
+      "abstained": false,
+      "failure_category": null,
+      "correctness_label": "correct",
+      "usage": {
+        "calls": 3,
+        "prompt_tokens": 908,
+        "completion_tokens": 126,
+        "total_tokens": 1034,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "4edf3d8dc7fe",
+        "type": "single_hop",
+        "question": "How long does express shipping take?",
+        "gold_answer": "2 business days",
+        "gold_chunk_ids": [
+          "1e8de7643d46"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that express shipping takes 2 business days.",
+          "generation_strategy": "single_chunk",
+          "gold_chunk_texts": {
+            "1e8de7643d46": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          },
+          "prompt": "single_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "1e8de7643d46"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/shipping.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "Express shipping takes 2 business days."
+        }
+      },
+      "response": {
+        "answer": "# Shipping\n\nStandard shipping takes 5 to 7 business days.",
+        "contexts": [
+          {
+            "id": "1e8de7643d46",
+            "text": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          }
+        ],
+        "latency_ms": 64.85630000042875,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Standard shipping takes 5 to 7 business days.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "The context explicitly states that 'Standard shipping takes 5 to 7 business days.'"
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 3,
+        "prompt_tokens": 795,
+        "completion_tokens": 111,
+        "total_tokens": 906,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "a3b89c5c5924",
+        "type": "single_hop",
+        "question": "What is the phone number for customer support?",
+        "gold_answer": "555-0142",
+        "gold_chunk_ids": [
+          "021712b698cc"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that the support phone number is 555-0142.",
+          "generation_strategy": "single_chunk",
+          "gold_chunk_texts": {
+            "021712b698cc": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.\nThe support phone number is 555-0142.\nRepair service is offered at the Portland flagship store.\nEmail support responses usually arrive within one business day."
+          },
+          "prompt": "single_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "021712b698cc"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/support.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "The support phone number is 555-0142."
+        }
+      },
+      "response": {
+        "answer": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.",
+        "contexts": [
+          {
+            "id": "021712b698cc",
+            "text": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.\nThe support phone number is 555-0142.\nRepair service is offered at the Portland flagship store.\nEmail support responses usually arrive within one business day."
+          }
+        ],
+        "latency_ms": 28.48050000011426,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Customer support is available from 8 am to 8 pm Pacific time.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "The context explicitly states that support is available from 8 am to 8 pm Pacific time."
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 3,
+        "prompt_tokens": 824,
+        "completion_tokens": 112,
+        "total_tokens": 936,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "2162ea29fdab",
+        "type": "single_hop",
+        "question": "What is the return window for TechClub members at TechMart?",
+        "gold_answer": "45 days",
+        "gold_chunk_ids": [
+          "eb7b879dcab6"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that TechClub members receive a 45-day return window.",
+          "generation_strategy": "single_chunk",
+          "gold_chunk_texts": {
+            "eb7b879dcab6": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          "prompt": "single_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "eb7b879dcab6"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/returns.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "TechClub members receive a 45-day return window."
+        }
+      },
+      "response": {
+        "answer": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.",
+        "contexts": [
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          }
+        ],
+        "latency_ms": 16.036899999562593,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechMart accepts returns within 30 days of purchase.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart accepts returns within 30 days of purchase with a receipt."
+        },
+        {
+          "claim": "TechMart requires a receipt for returns.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart accepts returns within 30 days of purchase with a receipt."
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 4,
+        "prompt_tokens": 1367,
+        "completion_tokens": 211,
+        "total_tokens": 1578,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "ae03b4a68e93",
+        "type": "single_hop",
+        "question": "To how many months can TechClub members extend their electronics warranty coverage?",
+        "gold_answer": "24 months",
+        "gold_chunk_ids": [
+          "99ea2ea381c0"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context states that TechClub members can extend coverage to 24 months.",
+          "generation_strategy": "single_chunk",
+          "gold_chunk_texts": {
+            "99ea2ea381c0": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          },
+          "prompt": "single_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "99ea2ea381c0"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/warranty.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "TechClub members can extend coverage to 24 months."
+        }
+      },
+      "response": {
+        "answer": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.",
+        "contexts": [
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          },
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          }
+        ],
+        "latency_ms": 13.73299999977462,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Most electronics include a 12-month manufacturer warranty.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that most electronics include a 12-month manufacturer warranty."
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 3,
+        "prompt_tokens": 914,
+        "completion_tokens": 140,
+        "total_tokens": 1054,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "f629211eb9a7",
+        "type": "multi_hop",
+        "question": "At which specific TechMart location is repair service offered?",
+        "gold_answer": "The Portland flagship store",
+        "gold_chunk_ids": [
+          "021712b698cc",
+          "8575b5a9f0d4"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states in document [1] that repair service is offered at the Portland flagship store.",
+          "generation_strategy": "related_chunks",
+          "gold_chunk_texts": {
+            "021712b698cc": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.\nThe support phone number is 555-0142.\nRepair service is offered at the Portland flagship store.\nEmail support responses usually arrive within one business day.",
+            "8575b5a9f0d4": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          },
+          "prompt": "multi_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "021712b698cc",
+            "8575b5a9f0d4"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/founding.md",
+            "examples/toy_rag/docs/support.md"
+          ],
+          "source_pages": [],
+          "supporting_quotes": [
+            "Repair service is offered at the Portland flagship store.",
+            "TechMart was founded in 1994 in Portland, Oregon, by Elena Park."
+          ]
+        }
+      },
+      "response": {
+        "answer": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.",
+        "contexts": [
+          {
+            "id": "021712b698cc",
+            "text": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.\nThe support phone number is 555-0142.\nRepair service is offered at the Portland flagship store.\nEmail support responses usually arrive within one business day."
+          },
+          {
+            "id": "8575b5a9f0d4",
+            "text": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          },
+          {
+            "id": "1e8de7643d46",
+            "text": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          }
+        ],
+        "latency_ms": 15.221300000121119,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Customer support is available from 8 am to 8 pm Pacific time.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that support is available from 8 am to 8 pm Pacific time."
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 2,
+        "prompt_tokens": 769,
+        "completion_tokens": 106,
+        "total_tokens": 875,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "5b871ab5c045",
+        "type": "single_hop",
+        "question": "In what year was TechMart founded?",
+        "gold_answer": "1994",
+        "gold_chunk_ids": [
+          "8575b5a9f0d4"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that TechMart was founded in 1994.",
+          "generation_strategy": "single_chunk",
+          "gold_chunk_texts": {
+            "8575b5a9f0d4": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          },
+          "prompt": "single_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "8575b5a9f0d4"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/founding.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "TechMart was founded in 1994 in Portland, Oregon, by Elena Park."
+        }
+      },
+      "response": {
+        "answer": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.",
+        "contexts": [
+          {
+            "id": "8575b5a9f0d4",
+            "text": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          },
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "1e8de7643d46",
+            "text": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          }
+        ],
+        "latency_ms": 16.32549999976618,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechMart was founded in 1994.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart was founded in 1994."
+        },
+        {
+          "claim": "TechMart was founded in Portland, Oregon.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'TechMart was founded in 1994 in Portland, Oregon'."
+        },
+        {
+          "claim": "TechMart was founded by Elena Park.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart was founded by Elena Park."
+        }
+      ],
+      "correct": true,
+      "abstained": false,
+      "failure_category": null,
+      "correctness_label": "correct",
+      "usage": {
+        "calls": 5,
+        "prompt_tokens": 1858,
+        "completion_tokens": 270,
+        "total_tokens": 2128,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "30182fc6aa66",
+        "type": "multi_hop",
+        "question": "What is the standard shipping duration and the standard return window for TechMart?",
+        "gold_answer": "Standard shipping takes 5 to 7 business days, and returns are accepted within 30 days of purchase with a receipt.",
+        "gold_chunk_ids": [
+          "1e8de7643d46",
+          "eb7b879dcab6"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context states that standard shipping takes 5 to 7 business days and that TechMart accepts returns within 30 days of purchase.",
+          "generation_strategy": "related_chunks",
+          "gold_chunk_texts": {
+            "1e8de7643d46": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes.",
+            "eb7b879dcab6": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          "prompt": "multi_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "1e8de7643d46",
+            "eb7b879dcab6"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/returns.md",
+            "examples/toy_rag/docs/shipping.md"
+          ],
+          "source_pages": [],
+          "supporting_quotes": [
+            "Standard shipping takes 5 to 7 business days.",
+            "TechMart accepts returns within 30 days of purchase with a receipt."
+          ]
+        }
+      },
+      "response": {
+        "answer": "# Shipping\n\nStandard shipping takes 5 to 7 business days.",
+        "contexts": [
+          {
+            "id": "1e8de7643d46",
+            "text": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          }
+        ],
+        "latency_ms": 16.282499999761058,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Standard shipping takes 5 to 7 business days.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'Standard shipping takes 5 to 7 business days.'"
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "partially_correct",
+      "usage": {
+        "calls": 2,
+        "prompt_tokens": 764,
+        "completion_tokens": 99,
+        "total_tokens": 863,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "b0fdfd0ece4e",
+        "type": "multi_hop",
+        "question": "In what year was the company that allows TechClub members a 45-day return window originally founded?",
+        "gold_answer": "1994",
+        "gold_chunk_ids": [
+          "8575b5a9f0d4",
+          "eb7b879dcab6"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context states that TechClub members receive a 45-day return window [2] and that TechMart is the company that has this policy [1, 2], and that TechMart was founded in 1994 [1].",
+          "generation_strategy": "related_chunks",
+          "gold_chunk_texts": {
+            "8575b5a9f0d4": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012.",
+            "eb7b879dcab6": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          "prompt": "multi_hop",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "8575b5a9f0d4",
+            "eb7b879dcab6"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/founding.md",
+            "examples/toy_rag/docs/returns.md"
+          ],
+          "source_pages": [],
+          "supporting_quotes": [
+            "TechMart was founded in 1994 in Portland, Oregon, by Elena Park.",
+            "TechClub members receive a 45-day return window."
+          ]
+        }
+      },
+      "response": {
+        "answer": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.",
+        "contexts": [
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "8575b5a9f0d4",
+            "text": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          }
+        ],
+        "latency_ms": 14.439699999456934,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechMart accepts returns within 30 days of purchase.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'TechMart accepts returns within 30 days of purchase with a receipt.'"
+        },
+        {
+          "claim": "TechMart requires a receipt for returns.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart accepts returns within 30 days of purchase with a receipt."
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 3,
+        "prompt_tokens": 1242,
+        "completion_tokens": 176,
+        "total_tokens": 1418,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "e17b9d94ba21",
+        "type": "unanswerable",
+        "question": "How many TechClub members are currently enrolled worldwide?",
+        "gold_answer": null,
+        "gold_chunk_ids": [],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "unanswerable",
+        "metadata": {
+          "answerability_reason": "The provided context contains information about TechClub membership costs, benefits, and policies, but it does not state the number of TechClub members currently enrolled worldwide.",
+          "generation_strategy": "source_plus_neighbors",
+          "gold_chunk_texts": {},
+          "prompt": "unanswerable",
+          "prompt_version": "v1",
+          "rationale": "The context provides membership pricing, discounts, and perks, but it does not contain any statistics, figures, or estimates regarding the total number of global or active TechClub members.",
+          "source_chunk_ids": [
+            "4dfe614612b9",
+            "eb7b879dcab6",
+            "99ea2ea381c0"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/membership.md",
+            "examples/toy_rag/docs/returns.md",
+            "examples/toy_rag/docs/warranty.md"
+          ],
+          "source_pages": []
+        }
+      },
+      "response": {
+        "answer": "# TechClub membership\n\nTechClub costs 49 dollars per year.",
+        "contexts": [
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          }
+        ],
+        "latency_ms": 16.684199999872362,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": false,
+        "hit": false,
+        "reciprocal_rank": 0.0,
+        "context_recall": 0.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechClub costs 49 dollars per year.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'TechClub costs 49 dollars per year.'"
+        }
+      ],
+      "correct": null,
+      "abstained": false,
+      "failure_category": "failed_abstention",
+      "correctness_label": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "d642f123e3fc",
+        "type": "unanswerable",
+        "question": "What is the lifetime membership option cost for TechClub?",
+        "gold_answer": null,
+        "gold_chunk_ids": [],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "unanswerable",
+        "metadata": {
+          "answerability_reason": "The context mentions that TechClub costs 49 dollars per year, but it does not mention a lifetime membership option or its cost.",
+          "generation_strategy": "source_plus_neighbors",
+          "gold_chunk_texts": {},
+          "prompt": "unanswerable",
+          "prompt_version": "v1",
+          "rationale": "The context mentions that TechClub costs 49 dollars per year, but it does not provide any information regarding whether a lifetime membership option exists or what its cost would be.",
+          "source_chunk_ids": [
+            "eb7b879dcab6",
+            "8575b5a9f0d4",
+            "4dfe614612b9"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/founding.md",
+            "examples/toy_rag/docs/membership.md",
+            "examples/toy_rag/docs/returns.md"
+          ],
+          "source_pages": []
+        }
+      },
+      "response": {
+        "answer": "# TechClub membership\n\nTechClub costs 49 dollars per year.",
+        "contexts": [
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          }
+        ],
+        "latency_ms": 14.015199999448669,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": false,
+        "hit": false,
+        "reciprocal_rank": 0.0,
+        "context_recall": 0.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechClub costs 49 dollars per year.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'TechClub costs 49 dollars per year.'"
+        }
+      ],
+      "correct": null,
+      "abstained": false,
+      "failure_category": "failed_abstention",
+      "correctness_label": null,
+      "usage": {
+        "calls": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "d7fe379edab9",
+        "type": "unanswerable",
+        "question": "What is the annual revenue of TechMart?",
+        "gold_answer": null,
+        "gold_chunk_ids": [],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "unanswerable",
+        "metadata": {
+          "answerability_reason": "The provided context contains information about shipping, returns, and company history, but does not mention the annual revenue of TechMart.",
+          "generation_strategy": "source_plus_neighbors",
+          "gold_chunk_texts": {},
+          "prompt": "unanswerable",
+          "prompt_version": "v1",
+          "rationale": "The provided context discusses shipping times, return policies, and the history of TechMart including its founding year, location, and milestones, but it does not contain any financial information or data regarding the company's annual revenue.",
+          "source_chunk_ids": [
+            "1e8de7643d46",
+            "eb7b879dcab6",
+            "8575b5a9f0d4"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/founding.md",
+            "examples/toy_rag/docs/returns.md",
+            "examples/toy_rag/docs/shipping.md"
+          ],
+          "source_pages": []
+        }
+      },
+      "response": {
+        "answer": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.",
+        "contexts": [
+          {
+            "id": "8575b5a9f0d4",
+            "text": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          },
+          {
+            "id": "1e8de7643d46",
+            "text": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          }
+        ],
+        "latency_ms": 14.805400000113877,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": false,
+        "hit": false,
+        "reciprocal_rank": 0.0,
+        "context_recall": 0.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechMart was founded in 1994.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart was founded in 1994."
+        },
+        {
+          "claim": "TechMart was founded in Portland, Oregon.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart was founded in 1994 in Portland, Oregon."
+        },
+        {
+          "claim": "TechMart was founded by Elena Park.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that TechMart was founded by Elena Park in 1994."
+        }
+      ],
+      "correct": null,
+      "abstained": false,
+      "failure_category": "failed_abstention",
+      "correctness_label": null,
+      "usage": {
+        "calls": 3,
+        "prompt_tokens": 1408,
+        "completion_tokens": 157,
+        "total_tokens": 1565,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "d19ee894c23d",
+        "type": "adversarial",
+        "question": "What is the annual cost of a TechClub membership?",
+        "gold_answer": "49 dollars",
+        "gold_chunk_ids": [
+          "4dfe614612b9"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that TechClub costs 49 dollars per year.",
+          "generation_strategy": "near_miss_pair",
+          "gold_chunk_texts": {
+            "4dfe614612b9": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          "near_miss_chunk_id": "eb7b879dcab6",
+          "near_miss_detail": "TechClub members receive a 45-day return window.",
+          "prompt": "adversarial",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "4dfe614612b9"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/membership.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "TechClub costs 49 dollars per year."
+        }
+      },
+      "response": {
+        "answer": "# TechClub membership\n\nTechClub costs 49 dollars per year.",
+        "contexts": [
+          {
+            "id": "4dfe614612b9",
+            "text": "# TechClub membership\n\nTechClub costs 49 dollars per year.\nMembers receive a 10 percent discount on accessories.\nMembers get early access to sale events.\nMembership can be cancelled at any time."
+          },
+          {
+            "id": "99ea2ea381c0",
+            "text": "# Warranty\n\nMost electronics include a 12-month manufacturer warranty.\nTechClub members can extend coverage to 24 months.\nAccidental damage is not covered by the standard warranty.\nWarranty claims require the original receipt."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          }
+        ],
+        "latency_ms": 14.27970000077039,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "TechClub costs 49 dollars per year.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'TechClub costs 49 dollars per year.'"
+        }
+      ],
+      "correct": true,
+      "abstained": false,
+      "failure_category": null,
+      "correctness_label": "correct",
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 288,
+        "completion_tokens": 40,
+        "total_tokens": 328,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "c7d663b5a498",
+        "type": "adversarial",
+        "question": "Where is repair service offered for customers?",
+        "gold_answer": "Portland flagship store",
+        "gold_chunk_ids": [
+          "021712b698cc"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that repair service is offered at the Portland flagship store.",
+          "generation_strategy": "near_miss_pair",
+          "gold_chunk_texts": {
+            "021712b698cc": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.\nThe support phone number is 555-0142.\nRepair service is offered at the Portland flagship store.\nEmail support responses usually arrive within one business day."
+          },
+          "near_miss_chunk_id": "8575b5a9f0d4",
+          "near_miss_detail": "TechMart was founded in 1994 in Portland, Oregon",
+          "prompt": "adversarial",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "021712b698cc"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/support.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "Repair service is offered at the Portland flagship store."
+        }
+      },
+      "response": {
+        "answer": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.",
+        "contexts": [
+          {
+            "id": "021712b698cc",
+            "text": "# Customer support\n\nSupport is available from 8 am to 8 pm Pacific time.\nThe support phone number is 555-0142.\nRepair service is offered at the Portland flagship store.\nEmail support responses usually arrive within one business day."
+          }
+        ],
+        "latency_ms": 12.004000000160886,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Customer support is available from 8 am to 8 pm Pacific time.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "The context explicitly states that support is available from 8 am to 8 pm Pacific time."
+        }
+      ],
+      "correct": false,
+      "abstained": false,
+      "failure_category": "generation_failure",
+      "correctness_label": "incorrect",
+      "usage": {
+        "calls": 1,
+        "prompt_tokens": 288,
+        "completion_tokens": 41,
+        "total_tokens": 329,
+        "cost_usd": 0.0
+      }
+    },
+    {
+      "case": {
+        "case_id": "98c6cb227cfa",
+        "type": "adversarial",
+        "question": "How many business days does standard shipping take for TechMart?",
+        "gold_answer": "5 to 7 business days",
+        "gold_chunk_ids": [
+          "1e8de7643d46"
+        ],
+        "source_model": "gemini-3.5-flash-lite",
+        "answerability_verdict": "answerable",
+        "metadata": {
+          "answerability_reason": "The context explicitly states that standard shipping takes 5 to 7 business days.",
+          "generation_strategy": "near_miss_pair",
+          "gold_chunk_texts": {
+            "1e8de7643d46": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          },
+          "near_miss_chunk_id": "eb7b879dcab6",
+          "near_miss_detail": "TechClub members receive a 45-day return window",
+          "prompt": "adversarial",
+          "prompt_version": "v1",
+          "source_chunk_ids": [
+            "1e8de7643d46"
+          ],
+          "source_doc_ids": [
+            "examples/toy_rag/docs/shipping.md"
+          ],
+          "source_pages": [],
+          "supporting_quote": "Standard shipping takes 5 to 7 business days."
+        }
+      },
+      "response": {
+        "answer": "# Shipping\n\nStandard shipping takes 5 to 7 business days.",
+        "contexts": [
+          {
+            "id": "1e8de7643d46",
+            "text": "# Shipping\n\nStandard shipping takes 5 to 7 business days.\nExpress shipping takes 2 business days.\nOrders over 50 dollars ship free with standard shipping.\nTechMart does not ship to PO boxes."
+          },
+          {
+            "id": "eb7b879dcab6",
+            "text": "# Returns policy\n\nTechMart accepts returns within 30 days of purchase with a receipt.\nTechClub members receive a 45-day return window.\nOpened software and gift cards are not returnable.\nOnline orders can be returned in any store."
+          },
+          {
+            "id": "8575b5a9f0d4",
+            "text": "# TechMart history\n\nTechMart was founded in 1994 in Portland, Oregon, by Elena Park.\nThe first store opened on Alder Street in March 1994.\nTechMart launched its online store in 2003.\nThe company moved its headquarters to Seattle in 2012."
+          }
+        ],
+        "latency_ms": 16.770100000030652,
+        "error": null
+      },
+      "retrieval": {
+        "applicable": true,
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "context_recall": 1.0
+      },
+      "faithfulness": 1.0,
+      "claim_verdicts": [
+        {
+          "claim": "Standard shipping takes 5 to 7 business days.",
+          "supported": true,
+          "evidence_context_index": 0,
+          "rationale": "Context [0] explicitly states that 'Standard shipping takes 5 to 7 business days.'"
+        }
+      ],
+      "correct": true,
+      "abstained": false,
+      "failure_category": null,
+      "correctness_label": "correct",
+      "usage": {
+        "calls": 2,
+        "prompt_tokens": 762,
+        "completion_tokens": 87,
+        "total_tokens": 849,
+        "cost_usd": 0.0
+      }
+    }
+  ]
+}
